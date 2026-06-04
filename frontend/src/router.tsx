@@ -4,6 +4,11 @@ import { Shell } from "@/components/layout/Shell";
 import LoginPage from "@/pages/Login";
 import DashboardPage from "@/pages/Dashboard";
 import Placeholder from "@/pages/Placeholder";
+import OrganizationsPage from "@/pages/organizations/OrganizationsPage";
+import DepartmentsPage from "@/pages/departments/DepartmentsPage";
+import BranchesPage from "@/pages/branches/BranchesPage";
+import UsersPage from "@/pages/users/UsersPage";
+import AuditPage from "@/pages/audit/AuditPage";
 
 const placeholder = (title: string, stage?: string) => ({
   element: <Placeholder title={title} stage={stage} />,
@@ -18,17 +23,17 @@ export const router = createBrowserRouter([
         element: <Shell />,
         children: [
           { path: "/", element: <DashboardPage /> },
-          { path: "/organizations", ...placeholder("Организации", "на этапе 2") },
-          { path: "/departments", ...placeholder("Отделы", "на этапе 2") },
-          { path: "/branches", ...placeholder("Филиалы", "на этапе 2") },
+          { path: "/organizations", element: <OrganizationsPage /> },
+          { path: "/departments", element: <DepartmentsPage /> },
+          { path: "/branches", element: <BranchesPage /> },
           { path: "/devices", ...placeholder("Устройства", "на этапе 3") },
           { path: "/employees", ...placeholder("Сотрудники", "на этапе 3") },
           { path: "/schedules", ...placeholder("Расписания", "на этапе 4") },
           { path: "/attendance", ...placeholder("Приход/уход", "на этапе 4") },
           { path: "/reports", ...placeholder("Отчёты", "на этапе 5") },
           { path: "/integrations", ...placeholder("Интеграции", "на этапе 6") },
-          { path: "/users", ...placeholder("Пользователи системы", "на этапе 2") },
-          { path: "/audit", ...placeholder("Логи действий", "на этапе 2") },
+          { path: "/users", element: <UsersPage /> },
+          { path: "/audit", element: <AuditPage /> },
           { path: "/settings", ...placeholder("Настройки", "на этапе 7") },
         ],
       },
