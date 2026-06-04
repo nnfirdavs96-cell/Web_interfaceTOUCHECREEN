@@ -46,19 +46,28 @@ docs/       — документация (API, Hikvision, Deploy)
 
 ---
 
-## Запуск (после скаффолда)
+## Запуск
 
 ```bash
 git clone <repo>
 cd Web_interfaceTOUCHECREEN
-cp backend/.env.example .env
-docker compose -f deploy/docker-compose.yml up -d
+cp backend/.env.example backend/.env
+docker compose -f deploy/docker-compose.yml up -d --build
 ```
 
 После старта:
 - Веб-интерфейс: http://localhost
 - API + Swagger: http://localhost/api/docs
-- Логин по умолчанию: `admin@local` / `admin` (задаётся в seed).
+- Health-check: http://localhost/api/health
+- Логин по умолчанию: `admin@local` / `admin` (создаётся автоматически при первом запуске).
+
+### Локальная разработка фронта
+
+```bash
+cd frontend
+npm install
+npm run dev   # http://localhost:5173 → проксирует /api на backend:8000
+```
 
 ---
 
