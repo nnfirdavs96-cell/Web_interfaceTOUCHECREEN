@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Cpu, Pencil, Plus, Trash2, UserPlus } from "lucide-react";
+import { Cpu, Pencil, Trash2, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { branchesApi } from "@/api/branches";
 import { depsApi } from "@/api/departments";
