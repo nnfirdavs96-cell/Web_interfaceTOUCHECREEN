@@ -110,6 +110,71 @@ export interface EmployeeAccess {
   synced_at: string | null;
 }
 
+export interface ScheduleDay {
+  id?: string;
+  weekday: number;
+  is_workday: boolean;
+  start_time: string | null;
+  end_time: string | null;
+  shift_no: number;
+}
+
+export interface Schedule {
+  id: string;
+  name: string;
+  type: string;
+  allowed_late_minutes: number;
+  allowed_early_leave_minutes: number;
+  night_shift: boolean;
+  lunch_start: string | null;
+  lunch_end: string | null;
+  comment: string | null;
+  days: ScheduleDay[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttendanceEvent {
+  id: string;
+  employee_id: string | null;
+  device_id: string | null;
+  external_user_id: string | null;
+  event_time: string;
+  event_type: string;
+  success: boolean;
+}
+
+export interface AttendanceReport {
+  id: string;
+  employee_id: string;
+  date: string;
+  required_check_in: string | null;
+  actual_check_in: string | null;
+  required_check_out: string | null;
+  actual_check_out: string | null;
+  late_minutes: number;
+  early_leave_minutes: number;
+  worked_minutes: number;
+  status: string;
+  device_in_id: string | null;
+  device_out_id: string | null;
+}
+
+export interface DashboardKpis {
+  total_employees: number;
+  total_devices: number;
+  online_devices: number;
+  came_today: number;
+  late_today: number;
+  absent_today: number;
+}
+
+export interface DashboardData {
+  kpis: DashboardKpis;
+  weekly: { date: string; came: number; late: number }[];
+  recent_events: AttendanceEvent[];
+}
+
 export interface AuditLog {
   id: string;
   user_id: string | null;
