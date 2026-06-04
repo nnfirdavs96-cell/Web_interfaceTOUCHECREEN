@@ -11,6 +11,9 @@ import UsersPage from "@/pages/users/UsersPage";
 import AuditPage from "@/pages/audit/AuditPage";
 import DevicesPage from "@/pages/devices/DevicesPage";
 import EmployeesPage from "@/pages/employees/EmployeesPage";
+import SchedulesPage from "@/pages/schedules/SchedulesPage";
+import AttendancePage from "@/pages/attendance/AttendancePage";
+import ReportsPage from "@/pages/reports/ReportsPage";
 
 const placeholder = (title: string, stage?: string) => ({
   element: <Placeholder title={title} stage={stage} />,
@@ -30,9 +33,9 @@ export const router = createBrowserRouter([
           { path: "/branches", element: <BranchesPage /> },
           { path: "/devices", element: <DevicesPage /> },
           { path: "/employees", element: <EmployeesPage /> },
-          { path: "/schedules", ...placeholder("Расписания", "на этапе 4") },
-          { path: "/attendance", ...placeholder("Приход/уход", "на этапе 4") },
-          { path: "/reports", ...placeholder("Отчёты", "на этапе 5") },
+          { path: "/schedules", element: <SchedulesPage /> },
+          { path: "/attendance", element: <AttendancePage /> },
+          { path: "/reports", element: <ReportsPage /> },
           { path: "/integrations", ...placeholder("Интеграции", "на этапе 6") },
           { path: "/users", element: <UsersPage /> },
           { path: "/audit", element: <AuditPage /> },
