@@ -1,0 +1,15 @@
+import { api } from "./client";
+import type { Device, DeviceTestResult, Paginated } from "./types";
+
+export const devicesApi = {
+  list: (params: { page?: number; page_size?: number; search?: string } = {}) =>
+    api.get<Paginated<Device>>("/devices", { params }).then((r) => r.data),
+  create: (data: Partial<Device> & { password: string }) =>
+    api.post<Device>("/devices", data).then((r) => r.data),
+  update: (id: string, data: Partial<Device> & { password?: string }) =>
+    api.put<Device>(`/devices/${id}`, data).then((r) => r.data),
+  remove: (id: string) => api.delete(`/devices/${id}`),
+  test: (id: string) =>
+    api.post<DeviceTestResult>(`/devices/${id}/test-connection`).then((r) => r.data),
+  sync: (id: string) => api.post(`/devices/${id}/sync`),
+};

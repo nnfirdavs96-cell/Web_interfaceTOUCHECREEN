@@ -9,6 +9,8 @@ import DepartmentsPage from "@/pages/departments/DepartmentsPage";
 import BranchesPage from "@/pages/branches/BranchesPage";
 import UsersPage from "@/pages/users/UsersPage";
 import AuditPage from "@/pages/audit/AuditPage";
+import DevicesPage from "@/pages/devices/DevicesPage";
+import EmployeesPage from "@/pages/employees/EmployeesPage";
 
 const placeholder = (title: string, stage?: string) => ({
   element: <Placeholder title={title} stage={stage} />,
@@ -26,8 +28,8 @@ export const router = createBrowserRouter([
           { path: "/organizations", element: <OrganizationsPage /> },
           { path: "/departments", element: <DepartmentsPage /> },
           { path: "/branches", element: <BranchesPage /> },
-          { path: "/devices", ...placeholder("Устройства", "на этапе 3") },
-          { path: "/employees", ...placeholder("Сотрудники", "на этапе 3") },
+          { path: "/devices", element: <DevicesPage /> },
+          { path: "/employees", element: <EmployeesPage /> },
           { path: "/schedules", ...placeholder("Расписания", "на этапе 4") },
           { path: "/attendance", ...placeholder("Приход/уход", "на этапе 4") },
           { path: "/reports", ...placeholder("Отчёты", "на этапе 5") },

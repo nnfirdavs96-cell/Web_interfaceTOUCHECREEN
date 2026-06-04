@@ -56,6 +56,60 @@ export interface RoleInfo {
   name: string;
 }
 
+export interface Device {
+  id: string;
+  branch_id: string | null;
+  name: string;
+  type: string;
+  ip: string;
+  port: number;
+  username: string;
+  serial_number: string | null;
+  firmware: string | null;
+  online: boolean;
+  last_seen_at: string | null;
+  purpose: string;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeviceTestResult {
+  online: boolean;
+  detail: string;
+  serial_number: string | null;
+  firmware: string | null;
+}
+
+export interface Employee {
+  id: string;
+  external_id: string | null;
+  first_name: string;
+  last_name: string;
+  middle_name: string | null;
+  phone: string | null;
+  email: string | null;
+  organization_id: string | null;
+  department_id: string | null;
+  branch_id: string | null;
+  position: string | null;
+  photo_url: string | null;
+  status: string;
+  hired_at: string | null;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmployeeAccess {
+  id: string;
+  device_id: string;
+  access_level: string;
+  valid_from: string | null;
+  valid_to: string | null;
+  synced_at: string | null;
+}
+
 export interface AuditLog {
   id: string;
   user_id: string | null;
