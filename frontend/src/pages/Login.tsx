@@ -7,7 +7,7 @@ import { useAuthStore } from "@/stores/auth";
 export default function LoginPage() {
   const navigate = useNavigate();
   const setSession = useAuthStore((s) => s.setSession);
-  const [email, setEmail] = useState("admin@hikv.local");
+  const [email, setEmail] = useState("admin@hikvision.dev");
   const [password, setPassword] = useState("admin");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
