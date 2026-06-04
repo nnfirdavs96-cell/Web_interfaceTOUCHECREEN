@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     HIKVISION_MODE: str = "mock"
 
-    SEED_ADMIN_EMAIL: str = "admin@hikv.local"
+    SEED_ADMIN_EMAIL: str = "admin@hikvision.dev"
     SEED_ADMIN_PASSWORD: str = "admin"
 
     @property

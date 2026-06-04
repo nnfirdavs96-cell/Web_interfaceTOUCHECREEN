@@ -59,7 +59,7 @@ docker compose -f deploy/docker-compose.yml up -d --build
 - Веб-интерфейс: http://localhost
 - API + Swagger: http://localhost/api/docs
 - Health-check: http://localhost/api/health
-- Логин по умолчанию: `admin@hikv.local` / `admin` (создаётся автоматически при первом запуске).
+- Логин по умолчанию: `admin@hikvision.dev` / `admin` (создаётся автоматически при первом запуске).
 
 ### Локальная разработка фронта
 
