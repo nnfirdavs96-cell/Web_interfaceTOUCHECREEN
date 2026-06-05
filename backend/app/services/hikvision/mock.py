@@ -1,13 +1,10 @@
-"""Mock-клиент Hikvision: имитирует онлайн-устройство для разработки без железа.
-
-Стабильно «онлайн», возвращает фейковый serial/firmware, генерирует случайные события.
-"""
+"""Mock-клиент Hikvision: имитирует онлайн-устройство для разработки без железа."""
 import asyncio
 import hashlib
 import random
 from datetime import datetime, timedelta, timezone
 
-from app.services.hikvision.base import DeviceConn, DeviceInfo, RawEvent
+from app.services.hikvision.base import DeviceConn, DeviceInfo, EnrollResult, RawEvent
 
 
 class MockClient:
@@ -15,7 +12,7 @@ class MockClient:
         self.conn = conn
 
     async def test_connection(self) -> DeviceInfo:
-        await asyncio.sleep(0.2)  # имитируем сетевой round-trip
+        await asyncio.sleep(0.2)
         h = hashlib.md5(self.conn.ip.encode()).hexdigest()[:10].upper()
         return DeviceInfo(
             online=True,
@@ -30,7 +27,6 @@ class MockClient:
         span = (until - since).total_seconds()
         if span <= 0:
             return events
-        # 0–3 случайных события за период
         for _ in range(random.randint(0, 3)):
             offset = random.random() * span
             t = since + timedelta(seconds=offset)
@@ -45,8 +41,34 @@ class MockClient:
             )
         return events
 
-    async def upsert_user(self, external_id: str, full_name: str) -> None:
+    async def upsert_user(self, external_id: str, full_name: str) -> EnrollResult:
         await asyncio.sleep(0.05)
+        return EnrollResult(success=True, detail=f"mock: user {external_id} synced", value_ref=external_id)
 
-    async def delete_user(self, external_id: str) -> None:
+    async def delete_user(self, external_id: str) -> EnrollResult:
         await asyncio.sleep(0.05)
+        return EnrollResult(success=True, detail=f"mock: user {external_id} deleted")
+
+    async def capture_fingerprint(self, external_id: str, finger_no: int = 1) -> EnrollResult:
+        await asyncio.sleep(0.1)
+        return EnrollResult(
+            success=True,
+            detail=f"mock: fingerprint #{finger_no} enrolled for {external_id}",
+            value_ref=f"FP-{external_id}-{finger_no}",
+        )
+
+    async def upload_face(self, external_id: str, image_bytes: bytes) -> EnrollResult:
+        await asyncio.sleep(0.1)
+        return EnrollResult(
+            success=True,
+            detail=f"mock: face uploaded for {external_id} ({len(image_bytes)} bytes)",
+            value_ref=f"FACE-{external_id}",
+        )
+
+    async def add_card(self, external_id: str, card_no: str) -> EnrollResult:
+        await asyncio.sleep(0.05)
+        return EnrollResult(
+            success=True,
+            detail=f"mock: card {card_no} linked to {external_id}",
+            value_ref=card_no[-4:].rjust(len(card_no), "*"),
+        )
