@@ -374,6 +374,40 @@ async def enroll_face(
     return EnrollResponse(success=res.success, detail=res.detail, value_ref=res.value_ref)
 
 
+@router.post("/{emp_id}/capture-card", response_model=EnrollResponse)
+async def capture_card(
+    emp_id: UUID,
+    body: SyncToDeviceRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require("employees.write")),
+):
+    """Переводит устройство в режим считывания карты.
+
+    Терминал покажет «Приложите карту», сотрудник прикладывает карту,
+    её номер автоматически записывается и привязывается к employeeNo.
+    """
+    emp = crud.get_or_404(db, Employee, emp_id)
+    if not emp.external_id:
+        raise HTTPException(status_code=400, detail="Сначала укажите external_id сотрудника")
+    device = _get_device(db, body.device_id)
+    client = HikvisionService.client_for(device)
+    res = await client.capture_card(emp.external_id)
+    if res.success:
+        _save_credential(db, emp.id, device.id, "card", res.value_ref)
+    audit.log(
+        db,
+        user=user,
+        action="capture-card",
+        entity_type="employee",
+        entity_id=emp.id,
+        after={"success": res.success, "detail": res.detail},
+        request=request,
+    )
+    db.commit()
+    return EnrollResponse(success=res.success, detail=res.detail, value_ref=res.value_ref)
+
+
 @router.post("/{emp_id}/add-card", response_model=EnrollResponse)
 async def add_card(
     emp_id: UUID,

@@ -89,3 +89,11 @@ class MockClient:
             detail=f"mock: card {card_no} linked to {external_id}",
             value_ref=card_no[-4:].rjust(len(card_no), "*"),
         )
+
+    async def capture_card(self, external_id: str) -> EnrollResult:
+        await asyncio.sleep(0.1)
+        return EnrollResult(
+            success=True,
+            detail=f"mock: card captured for {external_id}",
+            value_ref="****1234",
+        )
