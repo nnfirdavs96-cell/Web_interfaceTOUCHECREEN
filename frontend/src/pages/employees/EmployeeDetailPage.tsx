@@ -54,10 +54,7 @@ export default function EmployeeDetailPage() {
 
   const employee = useQuery({
     queryKey: ["employee", id],
-    queryFn: async () => {
-      const list = await employeesApi.list({ page_size: 500 });
-      return list.items.find((e) => e.id === id) ?? null;
-    },
+    queryFn: () => employeesApi.get(id!),
     enabled: !!id,
   });
 
@@ -130,6 +127,14 @@ export default function EmployeeDetailPage() {
         ))}
       </div>
 
+      {tab === "profile" && employee.isLoading && (
+        <div className="py-10 text-center text-slate-400">Загрузка…</div>
+      )}
+      {tab === "profile" && employee.isError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-300">
+          Не удалось загрузить сотрудника. Возможно, он был удалён или у вас нет прав.
+        </div>
+      )}
       {tab === "profile" && emp && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <ProfileField label="ФИО" value={`${emp.last_name} ${emp.first_name} ${emp.middle_name ?? ""}`} />
