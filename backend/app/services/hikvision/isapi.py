@@ -414,28 +414,44 @@ class IsapiClient:
                 continue
         return None
 
-    async def upload_face(self, external_id: str, image_bytes: bytes) -> EnrollResult:
-        """Загружает фото лица и привязывает к пользователю на устройстве.
+    async def upload_face(
+        self, external_id: str, image_bytes: bytes, full_name: str = ""
+    ) -> EnrollResult:
+        """Загружает фото лица для сотрудника.
 
-        Использует /Intelligent/FDLib/FDSetUp (multipart): JSON-метаданные + JPEG.
+        Для DS-K1T343 V4.48 рабочий путь — PUT /AccessControl/UserInfo/SetUp
+        с multipart (UserInfo JSON + FaceImage JPEG). Проверено эмпирически.
         """
-        face_info = {
-            "faceLibType": "blackFD",
-            "FDID": "1",
-            "FPID": str(external_id),
+        name_bytes = (full_name or f"User {external_id}").encode("utf-8")[:128]
+        safe_name = name_bytes.decode("utf-8", errors="ignore") or f"User {external_id}"
+
+        user_info = {
+            "UserInfo": {
+                "employeeNo": str(external_id),
+                "name": safe_name,
+                "userType": "normal",
+                "Valid": {
+                    "enable": True,
+                    "beginTime": "2024-01-01T00:00:00",
+                    "endTime": "2037-12-31T23:59:59",
+                    "timeType": "local",
+                },
+                "doorRight": "1",
+                "RightPlan": [{"doorNo": 1, "planTemplateNo": "1"}],
+            }
         }
         files = {
-            "FaceDataRecord": (
-                "FaceDataRecord.json",
-                json.dumps(face_info).encode(),
+            "UserInfo": (
+                None,
+                json.dumps(user_info, ensure_ascii=False).encode("utf-8"),
                 "application/json",
             ),
-            "img": ("face.jpg", image_bytes, "image/jpeg"),
+            "FaceImage": ("face.jpg", image_bytes, "image/jpeg"),
         }
         try:
             async with self._client() as c:
-                r = await c.post(
-                    "/ISAPI/Intelligent/FDLib/FDSetUp?format=json&FDID=1&faceLibType=blackFD",
+                r = await c.put(
+                    "/ISAPI/AccessControl/UserInfo/SetUp?format=json",
                     files=files,
                     timeout=30.0,
                 )
@@ -448,7 +464,7 @@ class IsapiClient:
                     )
                 return EnrollResult(
                     success=True,
-                    detail="OK · фото лица загружено",
+                    detail=f"OK · фото лица загружено ({len(image_bytes)//1024} КБ)",
                     value_ref=f"FACE-{external_id}",
                 )
         except Exception as e:
