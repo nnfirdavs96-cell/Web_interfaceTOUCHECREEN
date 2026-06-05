@@ -43,6 +43,11 @@ def create_app() -> FastAPI:
 
         seed_run()
 
+        if settings.DEMO_SEED:
+            from app.db.demo_seed import run as demo_run
+
+            demo_run()
+
         # фоновый опрос Hikvision устройств
         loop = asyncio.get_event_loop()
         task = loop.create_task(poller_loop())

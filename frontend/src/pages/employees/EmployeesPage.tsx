@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Cpu, Pencil, Trash2, UserPlus } from "lucide-react";
+import { Cpu, ExternalLink, Pencil, Trash2, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { branchesApi } from "@/api/branches";
 import { depsApi } from "@/api/departments";
 import { devicesApi } from "@/api/devices";
@@ -169,10 +170,18 @@ export default function EmployeesPage() {
     {
       key: "actions",
       header: "",
-      width: "140px",
+      width: "180px",
       className: "text-right",
       render: (r) => (
         <div className="flex justify-end gap-1">
+          <Link
+            to={`/employees/${r.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex h-8 items-center justify-center rounded-lg px-3 text-xs text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            title="Открыть карточку"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Link>
           <Button
             size="sm"
             variant="ghost"

@@ -1,0 +1,39 @@
+{
+  "app": {
+    "title": "Hikvision Access",
+    "subtitle": "Sign in to the access control system",
+    "login": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "loginError": "Login failed",
+    "search": "Search employees, devices, reports…"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "organizations": "Organizations",
+    "departments": "Departments",
+    "branches": "Branches",
+    "devices": "Devices",
+    "employees": "Employees",
+    "schedules": "Schedules",
+    "attendance": "Attendance",
+    "reports": "Reports",
+    "integrations": "Integrations",
+    "users": "Users",
+    "audit": "Audit log",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "System settings",
+    "subtitle": "Current platform configuration",
+    "version": "Version",
+    "env": "Environment",
+    "hikvisionMode": "Hikvision mode",
+    "tokenTtl": "Access token TTL (min)",
+    "refreshTtl": "Refresh token TTL (days)",
+    "cors": "Allowed origins",
+    "demoSeed": "Demo data on startup",
+    "language": "Interface language",
+    "theme": "Theme"
+  }
+}

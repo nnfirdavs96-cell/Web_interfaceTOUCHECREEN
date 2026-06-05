@@ -1,0 +1,39 @@
+{
+  "app": {
+    "title": "Hikvision Access",
+    "subtitle": "Kirish nazorati tizimiga kiring",
+    "login": "Kirish",
+    "email": "Email",
+    "password": "Parol",
+    "loginError": "Kirishda xatolik",
+    "search": "Xodimlar, qurilmalar, hisobotlarni izlash…"
+  },
+  "nav": {
+    "dashboard": "Boshqaruv paneli",
+    "organizations": "Tashkilotlar",
+    "departments": "Bo‘limlar",
+    "branches": "Filiallar",
+    "devices": "Qurilmalar",
+    "employees": "Xodimlar",
+    "schedules": "Jadvallar",
+    "attendance": "Kelish/ketish",
+    "reports": "Hisobotlar",
+    "integrations": "Integratsiyalar",
+    "users": "Foydalanuvchilar",
+    "audit": "Audit jurnali",
+    "settings": "Sozlamalar"
+  },
+  "settings": {
+    "title": "Tizim sozlamalari",
+    "subtitle": "Joriy platforma konfiguratsiyasi",
+    "version": "Versiya",
+    "env": "Muhit",
+    "hikvisionMode": "Hikvision rejimi",
+    "tokenTtl": "Token muddati (daqiqa)",
+    "refreshTtl": "Refresh muddati (kun)",
+    "cors": "Ruxsat etilgan origins",
+    "demoSeed": "Boshlanishda demo ma'lumotlar",
+    "language": "Interfeys tili",
+    "theme": "Mavzu"
+  }
+}
