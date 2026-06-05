@@ -300,6 +300,7 @@ function CredentialsTab({
   );
   const [deviceId, setDeviceId] = useState<string>("");
   const effectiveDevice = deviceId || onlineDevices[0]?.id || "";
+  const token = useAuthStore((s) => s.accessToken);
 
   const creds = useQuery({
     queryKey: ["employee-credentials", employeeId],
@@ -327,9 +328,42 @@ function CredentialsTab({
     mutationFn: (file: File) => employeesApi.enrollFace(employeeId, effectiveDevice, file),
     onSuccess: show,
   });
+  const [snapshotPreview, setSnapshotPreview] = useState<string | null>(null);
+
+  async function captureCurrentFrame(): Promise<File | null> {
+    if (!effectiveDevice || !token) return null;
+    try {
+      // Запрашиваем свежий snapshot через наш API (без кэша браузера)
+      const url = devicesApi.snapshotUrl(effectiveDevice, token, Date.now());
+      const resp = await fetch(url, { cache: "no-store" });
+      if (!resp.ok) throw new Error(`snapshot HTTP ${resp.status}`);
+      const blob = await resp.blob();
+      // Сохраняем превью; освобождаем старое URL чтобы не было утечки
+      setSnapshotPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(blob);
+      });
+      return new File([blob], "snapshot.jpg", { type: "image/jpeg" });
+    } catch {
+      return null;
+    }
+  }
+
   const faceCaptureMut = useMutation({
-    mutationFn: () => employeesApi.captureFace(employeeId, effectiveDevice),
+    mutationFn: async () => {
+      const file = await captureCurrentFrame();
+      if (!file) {
+        throw new Error("snapshot");
+      }
+      return employeesApi.enrollFace(employeeId, effectiveDevice, file);
+    },
     onSuccess: show,
+    onError: () =>
+      setResult({
+        success: false,
+        detail: "Не удалось получить кадр с камеры",
+        value_ref: null,
+      }),
   });
   const cardMut = useMutation({
     mutationFn: () => employeesApi.addCard(employeeId, effectiveDevice, cardNo),
@@ -377,15 +411,31 @@ function CredentialsTab({
 
       {result && (
         <div
-          className={`rounded-lg border px-4 py-3 text-sm ${
+          className={`flex items-start gap-3 rounded-lg border px-4 py-3 text-sm ${
             result.success
               ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300"
               : "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-300"
           }`}
         >
-          {result.success ? "✅ " : "❌ "}
-          {result.detail}
-          {result.value_ref && <span className="ml-2 font-mono text-xs opacity-70">({result.value_ref})</span>}
+          {snapshotPreview && (
+            <img
+              src={snapshotPreview}
+              alt="snapshot"
+              className="h-20 w-auto shrink-0 rounded border border-slate-300 object-cover dark:border-slate-600"
+            />
+          )}
+          <div className="flex-1">
+            <div>
+              {result.success ? "✅ " : "❌ "}
+              {result.detail}
+              {result.value_ref && (
+                <span className="ml-2 font-mono text-xs opacity-70">({result.value_ref})</span>
+              )}
+            </div>
+            {snapshotPreview && (
+              <div className="mt-1 text-xs opacity-70">↑ кадр, отправленный на устройство</div>
+            )}
+          </div>
         </div>
       )}
 
