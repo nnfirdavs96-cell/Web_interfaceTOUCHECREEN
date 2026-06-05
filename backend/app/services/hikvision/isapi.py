@@ -447,27 +447,45 @@ class IsapiClient:
             f"\r\n--{boundary}--\r\n"
         ).encode()
 
-        headers = {"Content-Type": f"multipart/form-data; boundary={boundary}"}
+        headers = {
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(len(body)),
+            "Expect": "",
+        }
+        url = "/ISAPI/Intelligent/FDLib/FDSetUp?format=json&FDID=1&faceLibType=blackFD"
         try:
             async with self._client() as c:
-                r = await c.post(
-                    "/ISAPI/Intelligent/FDLib/FDSetUp"
-                    "?format=json&FDID=1&faceLibType=blackFD",
-                    content=body,
-                    headers=headers,
-                    timeout=30.0,
-                )
-                data = self._parse(r)
-                ok, detail = self._success(data)
-                if not ok:
-                    return EnrollResult(
-                        success=False,
-                        detail=self._friendly_error(data, r, detail),
+                last_r = None
+                last_data: dict = {}
+                last_detail = ""
+                for method in ("POST", "PUT"):
+                    last_r = await c.request(
+                        method,
+                        url,
+                        content=body,
+                        headers=headers,
+                        timeout=30.0,
                     )
+                    last_data = self._parse(last_r)
+                    ok, last_detail = self._success(last_data)
+                    if ok:
+                        return EnrollResult(
+                            success=True,
+                            detail=f"OK · лицо сохранено в библиотеке ({len(image_bytes)//1024} КБ)",
+                            value_ref=f"FACE-{external_id}",
+                        )
+                    sub = str(
+                        (last_data.get("ResponseStatus") or last_data).get("subStatusCode") or ""
+                    ).lower()
+                    # если method-проблема — пробуем другой метод
+                    if "method" not in sub:
+                        break
+
                 return EnrollResult(
-                    success=True,
-                    detail=f"OK · лицо сохранено в библиотеке ({len(image_bytes)//1024} КБ)",
-                    value_ref=f"FACE-{external_id}",
+                    success=False,
+                    detail=self._friendly_error(last_data, last_r, last_detail)
+                    if last_r is not None
+                    else "Request failed",
                 )
         except Exception as e:
             return EnrollResult(success=False, detail=str(e)[:200])
