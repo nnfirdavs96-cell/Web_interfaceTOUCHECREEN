@@ -422,7 +422,7 @@ function CredentialsTab({
         <Section
           icon={Camera}
           title="3. Лицо"
-          description="«Сканировать» — запустит съёмку камерой устройства (сотрудник смотрит в камеру). «Загрузить фото» — выбрать готовый JPG с компьютера."
+          description="«Сделать снимок» — возьмёт текущий кадр с камеры устройства (см. live-превью выше) и зальёт как фото лица. «Загрузить фото» — выбрать готовый JPG."
         >
           <input
             ref={fileRef}
@@ -441,7 +441,7 @@ function CredentialsTab({
               disabled={!effectiveDevice || faceCaptureMut.isPending}
             >
               {faceCaptureMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              <Camera className="h-4 w-4" /> Сканировать
+              <Camera className="h-4 w-4" /> Сделать снимок
             </Button>
             <Button
               variant="secondary"
