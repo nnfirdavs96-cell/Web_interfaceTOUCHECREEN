@@ -71,16 +71,45 @@ def list_employees(
     return {"items": items, "total": int(total), "page": page, "page_size": page_size}
 
 
+async def _autosync_to_devices(db: Session, emp: Employee, action: str = "upsert") -> None:
+    """Авто-синхронизация сотрудника со всеми онлайн-устройствами.
+
+    Запускается в фоне после create / update / delete сотрудника.
+    Не падает при ошибках отдельных устройств — просто логирует.
+    """
+    if not emp.external_id:
+        return  # без employeeNo синхронизировать нечего
+
+    devices = list(
+        db.scalars(select(Device).where(Device.online.is_(True))).all()
+    )
+    if not devices:
+        return
+
+    full_name = " ".join(filter(None, [emp.last_name, emp.first_name, emp.middle_name]))
+    for device in devices:
+        try:
+            client = HikvisionService.client_for(device)
+            if action == "delete":
+                await client.delete_user(emp.external_id)
+            else:
+                await client.upsert_user(emp.external_id, full_name)
+        except Exception:
+            pass  # игнорируем — не блокируем UI
+
+
 @router.post("", response_model=EmployeeOut, status_code=201)
-def create_employee(
+async def create_employee(
     body: EmployeeCreate,
     request: Request,
     db: Session = Depends(get_db),
     user: User = Depends(require("employees.write")),
 ):
-    return crud.create(
+    emp = crud.create(
         db, Employee, body.model_dump(), user=user, request=request, entity_type="employee"
     )
+    await _autosync_to_devices(db, emp, action="upsert")
+    return emp
 
 
 @router.get("/{emp_id}", response_model=EmployeeOut)
@@ -93,7 +122,7 @@ def get_employee(
 
 
 @router.put("/{emp_id}", response_model=EmployeeOut)
-def update_employee(
+async def update_employee(
     emp_id: UUID,
     body: EmployeeUpdate,
     request: Request,
@@ -101,19 +130,23 @@ def update_employee(
     user: User = Depends(require("employees.write")),
 ):
     emp = crud.get_or_404(db, Employee, emp_id)
-    return crud.update(
+    updated = crud.update(
         db, emp, body.model_dump(), user=user, request=request, entity_type="employee"
     )
+    await _autosync_to_devices(db, updated, action="upsert")
+    return updated
 
 
 @router.delete("/{emp_id}", status_code=204)
-def delete_employee(
+async def delete_employee(
     emp_id: UUID,
     request: Request,
     db: Session = Depends(get_db),
     user: User = Depends(require("employees.write")),
 ):
     emp = crud.get_or_404(db, Employee, emp_id)
+    # снимок данных для удалённого вызова до фактического удаления из БД
+    await _autosync_to_devices(db, emp, action="delete")
     crud.delete(db, emp, user=user, request=request, entity_type="employee")
 
 
