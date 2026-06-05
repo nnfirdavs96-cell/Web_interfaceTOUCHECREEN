@@ -57,6 +57,13 @@ class MockClient:
             value_ref=f"FP-{external_id}-{finger_no}",
         )
 
+    async def get_snapshot(self) -> bytes | None:
+        # 1x1 JPEG-заглушка
+        return bytes.fromhex(
+            "ffd8ffe000104a46494600010100000100010000ffdb004300080606070605080707"
+            "07090908ffd9"
+        )
+
     async def capture_face(self, external_id: str) -> EnrollResult:
         await asyncio.sleep(0.1)
         return EnrollResult(
