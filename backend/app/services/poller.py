@@ -45,12 +45,16 @@ async def poll_once() -> int:
 
             for ev in events:
                 emp_id = ext_to_emp_id.get(ev.external_user_id)
+                # Hikvision-терминалы односторонние: направление берём из device.purpose
+                event_type = ev.event_type
+                if device.purpose in ("entry", "exit"):
+                    event_type = device.purpose
                 ae = AttendanceEvent(
                     employee_id=emp_id,
                     device_id=device.id,
                     external_user_id=ev.external_user_id,
                     event_time=ev.event_time,
-                    event_type=ev.event_type,
+                    event_type=event_type,
                     success=ev.success,
                     raw_payload=ev.payload,
                 )
