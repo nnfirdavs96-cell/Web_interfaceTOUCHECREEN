@@ -339,46 +339,61 @@ class IsapiClient:
     async def capture_face(self, external_id: str) -> EnrollResult:
         """Удалённый запуск сканирования лица камерой устройства.
 
-        Устройство покажет рамку для лица — сотрудник смотрит в камеру.
-        Альтернатива загрузке готового фото.
+        По capabilities DS-K1T343 V4.48: isSupportCaptureFace=true.
+        Корректный endpoint: /ISAPI/AccessControl/CaptureFace (XML body).
         """
         xml_body = (
             f'<?xml version="1.0" encoding="UTF-8"?>'
-            f'<CaptureFaceDataCond version="2.0" '
+            f'<CaptureInfoCond version="2.0" '
             f'xmlns="http://www.isapi.org/ver20/XMLSchema">'
             f"<employeeNo>{external_id}</employeeNo>"
-            f"</CaptureFaceDataCond>"
+            f"</CaptureInfoCond>"
         )
-        try:
+
+        async def _try(method: str, path: str, *, xml: bool, json_body: dict | None = None):
             async with self._client() as c:
-                # сначала XML (как с отпечатком)
-                r = await c.post(
-                    "/ISAPI/AccessControl/CaptureFaceData",
-                    headers={"Content-Type": "application/xml"},
-                    content=xml_body,
-                    timeout=60.0,
-                )
-                data = self._parse(r)
-                ok, detail = self._success(data)
-                sub = str((data.get("ResponseStatus") or data).get("subStatusCode") or "")
-                # fallback на JSON
-                if not ok and ("xml" in sub.lower() or "json" in sub.lower() or r.status_code == 400):
-                    r = await c.post(
-                        "/ISAPI/AccessControl/CaptureFaceData?format=json",
-                        json={"CaptureFaceDataCond": {"employeeNo": str(external_id)}},
-                        timeout=60.0,
+                if xml:
+                    r = await c.request(
+                        method,
+                        path,
+                        headers={"Content-Type": "application/xml"},
+                        content=xml_body,
+                        timeout=90.0,
                     )
-                    data = self._parse(r)
-                    ok, detail = self._success(data)
-                if not ok:
+                else:
+                    r = await c.request(method, path, json=json_body, timeout=90.0)
+                return r, self._parse(r)
+
+        last_r = None
+        last_data: dict = {}
+        last_detail = ""
+        try:
+            for method, path, xml, json_body in (
+                ("POST", "/ISAPI/AccessControl/CaptureFace", True, None),
+                ("POST", "/ISAPI/AccessControl/CaptureFace?format=json", False,
+                    {"CaptureInfoCond": {"employeeNo": str(external_id)}}),
+                ("POST", "/ISAPI/AccessControl/CaptureFaceData", True, None),
+            ):
+                last_r, last_data = await _try(method, path, xml=xml, json_body=json_body)
+                ok, last_detail = self._success(last_data)
+                if ok:
                     return EnrollResult(
-                        success=False, detail=self._friendly_error(data, r, detail)
+                        success=True,
+                        detail="OK · посмотрите в камеру устройства",
+                        value_ref=f"FACE-{external_id}",
                     )
-                return EnrollResult(
-                    success=True,
-                    detail="OK · посмотрите в камеру устройства",
-                    value_ref=f"FACE-{external_id}",
-                )
+                # если 404 — endpoint неверный, идём дальше
+                if last_r.status_code == 404:
+                    continue
+                # если иная ошибка от ISAPI — она содержательная, прерываемся
+                break
+
+            return EnrollResult(
+                success=False,
+                detail=self._friendly_error(last_data, last_r, last_detail)
+                if last_r is not None
+                else "Не удалось обратиться к устройству",
+            )
         except Exception as e:
             return EnrollResult(success=False, detail=str(e)[:200])
 
