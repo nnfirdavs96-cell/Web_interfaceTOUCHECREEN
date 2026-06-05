@@ -76,6 +76,30 @@ class IsapiClient:
             ok = False
         return ok, str(status_str)
 
+    @staticmethod
+    def _friendly_error(data: dict, r: httpx.Response, fallback: str = "") -> str:
+        """Преобразует raw-ответ Hikvision в понятное русскоязычное сообщение."""
+        rs = data.get("ResponseStatus") or data
+        sub = str(rs.get("subStatusCode") or "").lower()
+        msg = rs.get("errorMsg") or rs.get("statusString") or fallback
+
+        friendly = {
+            "cardnoalreadyexist": "Карта с таким номером уже привязана к другому сотруднику",
+            "userexist": "Пользователь с таким employeeNo уже существует",
+            "employeenoexist": "Пользователь с таким employeeNo уже существует",
+            "nouser": "Сначала отправьте сотрудника на устройство (шаг 1)",
+            "checkemployeeno": "Сотрудник с таким employeeNo не найден на устройстве",
+            "badjsoncontent": "Неверный JSON формат запроса",
+            "badxmlcontent": "Неверный XML формат запроса",
+            "notsupport": "Операция не поддерживается этой моделью/прошивкой",
+            "lowdevicememory": "На устройстве закончилось место",
+            "deviceisbusy": "Устройство занято, попробуйте через 5 секунд",
+        }
+        for key, ru in friendly.items():
+            if key in sub:
+                return ru
+        return f"{msg} ({sub})" if sub else (msg or f"HTTP {r.status_code}")
+
     # ---------- info ----------
 
     async def test_connection(self) -> DeviceInfo:
@@ -226,11 +250,9 @@ class IsapiClient:
                 )
 
             if not ok:
-                rs = data.get("ResponseStatus") or data
-                err = rs.get("errorMsg") or rs.get("subStatusCode") or detail or r.text[:400]
                 return EnrollResult(
                     success=False,
-                    detail=f"HTTP {r.status_code}: {err}"[:600],
+                    detail=self._friendly_error(data, r, detail),
                 )
             return EnrollResult(
                 success=True,
@@ -279,9 +301,10 @@ class IsapiClient:
                 data = self._parse(r)
                 ok, detail = self._success(data)
                 if not ok:
-                    rs = data.get("ResponseStatus") or data
-                    err = rs.get("errorMsg") or rs.get("subStatusCode") or detail or r.text[:300]
-                    return EnrollResult(success=False, detail=f"HTTP {r.status_code}: {err}"[:500])
+                    return EnrollResult(
+                        success=False,
+                        detail=self._friendly_error(data, r, detail),
+                    )
                 return EnrollResult(
                     success=True,
                     detail=f"OK · палец #{finger_no} зарегистрирован",
@@ -318,9 +341,10 @@ class IsapiClient:
                 data = self._parse(r)
                 ok, detail = self._success(data)
                 if not ok:
-                    rs = data.get("ResponseStatus") or data
-                    err = rs.get("errorMsg") or rs.get("subStatusCode") or detail or r.text[:300]
-                    return EnrollResult(success=False, detail=f"HTTP {r.status_code}: {err}"[:500])
+                    return EnrollResult(
+                        success=False,
+                        detail=self._friendly_error(data, r, detail),
+                    )
                 return EnrollResult(
                     success=True,
                     detail="OK · фото лица загружено",
@@ -346,9 +370,10 @@ class IsapiClient:
                 data = self._parse(r)
                 ok, detail = self._success(data)
                 if not ok:
-                    rs = data.get("ResponseStatus") or data
-                    err = rs.get("errorMsg") or rs.get("subStatusCode") or detail or r.text[:300]
-                    return EnrollResult(success=False, detail=f"HTTP {r.status_code}: {err}"[:500])
+                    return EnrollResult(
+                        success=False,
+                        detail=self._friendly_error(data, r, detail),
+                    )
                 return EnrollResult(
                     success=True,
                     detail="OK",
