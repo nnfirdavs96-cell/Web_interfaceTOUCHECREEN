@@ -422,7 +422,7 @@ function CredentialsTab({
         <Section
           icon={Camera}
           title="3. Лицо"
-          description="«Сделать снимок» — возьмёт текущий кадр с камеры устройства (см. live-превью выше). «Загрузить фото» — выбрать готовый JPG."
+          description="«Сканировать» — запустит съёмку камерой устройства (сотрудник смотрит в камеру). «Загрузить фото» — выбрать готовый JPG с компьютера."
         >
           <input
             ref={fileRef}
@@ -441,7 +441,7 @@ function CredentialsTab({
               disabled={!effectiveDevice || faceCaptureMut.isPending}
             >
               {faceCaptureMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              <Camera className="h-4 w-4" /> Сделать снимок
+              <Camera className="h-4 w-4" /> Сканировать
             </Button>
             <Button
               variant="secondary"
@@ -524,11 +524,18 @@ function LiveCamera({ deviceId }: { deviceId: string }) {
 
   useEffect(() => {
     setError(false);
-    const id = window.setInterval(() => setTick(Date.now()), 1500);
-    return () => window.clearInterval(id);
+    setTick(Date.now());
   }, [deviceId]);
 
+  useEffect(() => {
+    if (error) return;
+    const id = window.setInterval(() => setTick(Date.now()), 1500);
+    return () => window.clearInterval(id);
+  }, [error]);
+
   if (!token) return null;
+  // DS-K1T343 не отдаёт snapshot по HTTP (только RTSP) — скрываем блок
+  if (error) return null;
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-900 p-3 dark:border-slate-800">
@@ -539,18 +546,12 @@ function LiveCamera({ deviceId }: { deviceId: string }) {
         </span>
         <span className="text-[10px]">{new Date(tick).toLocaleTimeString("ru-RU")}</span>
       </div>
-      {error ? (
-        <div className="flex h-48 items-center justify-center rounded-lg bg-slate-800 text-sm text-slate-400">
-          Камера недоступна (нет связи или модель без видео-канала)
-        </div>
-      ) : (
-        <img
-          src={devicesApi.snapshotUrl(deviceId, token, tick)}
-          alt="live"
-          className="mx-auto max-h-72 rounded-lg"
-          onError={() => setError(true)}
-        />
-      )}
+      <img
+        src={devicesApi.snapshotUrl(deviceId, token, tick)}
+        alt="live"
+        className="mx-auto max-h-72 rounded-lg"
+        onError={() => setError(true)}
+      />
       <p className="mt-2 text-center text-[10px] text-slate-500">
         Обновление каждые 1.5 секунды
       </p>
