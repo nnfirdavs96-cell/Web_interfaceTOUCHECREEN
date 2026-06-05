@@ -22,6 +22,7 @@ class Settings(BaseSettings):
 
     SEED_ADMIN_EMAIL: str = "admin@hikvision.dev"
     SEED_ADMIN_PASSWORD: str = "admin"
+    DEMO_SEED: bool = False
 
     @property
     def cors_origins_list(self) -> list[str]:

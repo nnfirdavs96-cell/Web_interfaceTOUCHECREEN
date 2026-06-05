@@ -1,0 +1,39 @@
+{
+  "app": {
+    "title": "Hikvision Access",
+    "subtitle": "Войдите в систему контроля доступа",
+    "login": "Войти",
+    "email": "Email",
+    "password": "Пароль",
+    "loginError": "Ошибка входа",
+    "search": "Поиск сотрудников, устройств, отчётов…"
+  },
+  "nav": {
+    "dashboard": "Дашборд",
+    "organizations": "Организации",
+    "departments": "Отделы",
+    "branches": "Филиалы",
+    "devices": "Устройства",
+    "employees": "Сотрудники",
+    "schedules": "Расписания",
+    "attendance": "Приход/уход",
+    "reports": "Отчёты",
+    "integrations": "Интеграции",
+    "users": "Пользователи",
+    "audit": "Логи действий",
+    "settings": "Настройки"
+  },
+  "settings": {
+    "title": "Настройки системы",
+    "subtitle": "Текущая конфигурация платформы",
+    "version": "Версия",
+    "env": "Окружение",
+    "hikvisionMode": "Hikvision-режим",
+    "tokenTtl": "Срок жизни токена (мин)",
+    "refreshTtl": "Срок жизни refresh (дн)",
+    "cors": "Разрешённые origins",
+    "demoSeed": "Демо-данные при старте",
+    "language": "Язык интерфейса",
+    "theme": "Тема"
+  }
+}

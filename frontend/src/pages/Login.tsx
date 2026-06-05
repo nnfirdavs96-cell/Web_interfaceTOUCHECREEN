@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Fingerprint, Loader2 } from "lucide-react";
 import { authApi } from "@/api/auth";
 import { useAuthStore } from "@/stores/auth";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const setSession = useAuthStore((s) => s.setSession);
   const [email, setEmail] = useState("admin@hikvision.dev");
   const [password, setPassword] = useState("admin");
@@ -27,7 +29,7 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
-        "Ошибка входа";
+        t("app.loginError");
       setError(msg);
     } finally {
       setLoading(false);
@@ -41,15 +43,13 @@ export default function LoginPage() {
           <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand text-white">
             <Fingerprint className="h-7 w-7" />
           </div>
-          <h1 className="text-2xl font-semibold">Hikvision Access</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Войдите в систему контроля доступа
-          </p>
+          <h1 className="text-2xl font-semibold">{t("app.title")}</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t("app.subtitle")}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium">Email</label>
+            <label className="mb-1 block text-sm font-medium">{t("app.email")}</label>
             <input
               type="email"
               required
@@ -59,7 +59,7 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Пароль</label>
+            <label className="mb-1 block text-sm font-medium">{t("app.password")}</label>
             <input
               type="password"
               required
@@ -81,7 +81,7 @@ export default function LoginPage() {
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brand-dark disabled:opacity-60"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            Войти
+            {t("app.login")}
           </button>
         </form>
       </div>

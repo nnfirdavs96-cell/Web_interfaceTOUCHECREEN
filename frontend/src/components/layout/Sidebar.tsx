@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Building2,
   Calendar,
@@ -17,22 +18,23 @@ import {
 import { cn } from "@/lib/utils";
 
 const nav = [
-  { to: "/", label: "Дашборд", icon: LayoutDashboard, end: true },
-  { to: "/organizations", label: "Организации", icon: Building2 },
-  { to: "/departments", label: "Отделы", icon: Network },
-  { to: "/branches", label: "Филиалы", icon: MapPin },
-  { to: "/devices", label: "Устройства", icon: Cpu },
-  { to: "/employees", label: "Сотрудники", icon: Users },
-  { to: "/schedules", label: "Расписания", icon: Calendar },
-  { to: "/attendance", label: "Приход/уход", icon: ClipboardList },
-  { to: "/reports", label: "Отчёты", icon: FileBarChart },
-  { to: "/integrations", label: "Интеграции", icon: Network },
-  { to: "/users", label: "Пользователи", icon: UserCog },
-  { to: "/audit", label: "Логи действий", icon: Shield },
-  { to: "/settings", label: "Настройки", icon: Settings },
+  { to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true },
+  { to: "/organizations", labelKey: "nav.organizations", icon: Building2 },
+  { to: "/departments", labelKey: "nav.departments", icon: Network },
+  { to: "/branches", labelKey: "nav.branches", icon: MapPin },
+  { to: "/devices", labelKey: "nav.devices", icon: Cpu },
+  { to: "/employees", labelKey: "nav.employees", icon: Users },
+  { to: "/schedules", labelKey: "nav.schedules", icon: Calendar },
+  { to: "/attendance", labelKey: "nav.attendance", icon: ClipboardList },
+  { to: "/reports", labelKey: "nav.reports", icon: FileBarChart },
+  { to: "/integrations", labelKey: "nav.integrations", icon: Network },
+  { to: "/users", labelKey: "nav.users", icon: UserCog },
+  { to: "/audit", labelKey: "nav.audit", icon: Shield },
+  { to: "/settings", labelKey: "nav.settings", icon: Settings },
 ];
 
 export function Sidebar() {
+  const { t } = useTranslation();
   return (
     <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 md:flex md:flex-col">
       <div className="flex h-16 items-center gap-2 border-b border-slate-200 px-5 dark:border-slate-800">
@@ -40,9 +42,9 @@ export function Sidebar() {
           <Fingerprint className="h-5 w-5" />
         </div>
         <div>
-          <div className="text-sm font-semibold leading-none">Hikvision Access</div>
+          <div className="text-sm font-semibold leading-none">{t("app.title")}</div>
           <div className="mt-1 text-[10px] uppercase tracking-wider text-slate-500">
-            v0.1 · dev
+            v0.7 · dev
           </div>
         </div>
       </div>
@@ -64,7 +66,7 @@ export function Sidebar() {
                 }
               >
                 <item.icon className="h-4 w-4" />
-                {item.label}
+                {t(item.labelKey)}
               </NavLink>
             </li>
           ))}
