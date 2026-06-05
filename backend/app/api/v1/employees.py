@@ -299,13 +299,28 @@ async def capture_face(
     db: Session = Depends(get_db),
     user: User = Depends(require("employees.write")),
 ):
-    """Запускает сканирование лица камерой устройства (/ISAPI/AccessControl/CaptureFace)."""
+    """Делает снимок с камеры устройства и заливает его как фото лица.
+
+    Сначала пробуем родной /CaptureFace; если прошивка не поддерживает —
+    берём текущий кадр через snapshot и заливаем через FDLib.
+    """
     emp = crud.get_or_404(db, Employee, emp_id)
     if not emp.external_id:
         raise HTTPException(status_code=400, detail="Сначала укажите external_id сотрудника")
     device = _get_device(db, body.device_id)
     client = HikvisionService.client_for(device)
+
     res = await client.capture_face(emp.external_id)
+
+    # Fallback: snapshot → upload, если notSupport / 404 / прочие проблемы
+    if not res.success:
+        snapshot = await client.get_snapshot()
+        if snapshot is not None:
+            res2 = await client.upload_face(emp.external_id, snapshot)
+            if res2.success:
+                res2.detail = f"OK · снимок с камеры залит как фото лица ({len(snapshot)//1024} КБ)"
+                res = res2
+
     if res.success:
         _save_credential(db, emp.id, device.id, "face", res.value_ref)
     audit.log(
