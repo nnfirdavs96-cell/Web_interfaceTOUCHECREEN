@@ -1,6 +1,20 @@
 import { api } from "./client";
 import type { Employee, EmployeeAccess, Paginated } from "./types";
 
+export interface Credential {
+  id: string;
+  type: string;
+  value_ref: string | null;
+  device_id: string | null;
+  enrolled_at: string | null;
+}
+
+export interface EnrollResult {
+  success: boolean;
+  detail: string;
+  value_ref: string | null;
+}
+
 export const employeesApi = {
   list: (
     params: {
@@ -28,4 +42,27 @@ export const employeesApi = {
       valid_to?: string | null;
     },
   ) => api.post<EmployeeAccess[]>(`/employees/${id}/assign-devices`, data).then((r) => r.data),
+  credentials: (id: string) =>
+    api.get<Credential[]>(`/employees/${id}/credentials`).then((r) => r.data),
+  syncToDevice: (id: string, device_id: string) =>
+    api
+      .post<EnrollResult>(`/employees/${id}/sync-to-device`, { device_id })
+      .then((r) => r.data),
+  enrollFingerprint: (id: string, device_id: string, finger_no = 1) =>
+    api
+      .post<EnrollResult>(`/employees/${id}/enroll-fingerprint`, { device_id, finger_no })
+      .then((r) => r.data),
+  enrollFace: (id: string, device_id: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api
+      .post<EnrollResult>(`/employees/${id}/enroll-face?device_id=${device_id}`, form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((r) => r.data);
+  },
+  addCard: (id: string, device_id: string, card_no: string) =>
+    api
+      .post<EnrollResult>(`/employees/${id}/add-card`, { device_id, card_no })
+      .then((r) => r.data),
 };

@@ -3,6 +3,7 @@
 Поддерживает обе формы ответа (JSON и XML) — некоторые модели возвращают XML
 даже при `format=json`. Авторизация — HTTP Digest.
 """
+import json
 import logging
 import re
 import uuid
@@ -12,13 +13,12 @@ from xml.etree import ElementTree as ET
 import httpx
 from httpx import DigestAuth
 
-from app.services.hikvision.base import DeviceConn, DeviceInfo, RawEvent
+from app.services.hikvision.base import DeviceConn, DeviceInfo, EnrollResult, RawEvent
 
 log = logging.getLogger("hikvision.isapi")
 
 
 def _strip_ns(tag: str) -> str:
-    """`{http://www.isapi.org/ver20/XMLSchema}DeviceInfo` → `DeviceInfo`."""
     return re.sub(r"^\{[^}]+\}", "", tag)
 
 
@@ -39,13 +39,11 @@ def _fmt_iso(dt: datetime) -> str:
     return dt.isoformat(timespec="seconds")
 
 
-# minor-коды событий доступа Hikvision (major=5)
-# Полный список в ISAPI Event spec; здесь — типовые успешные проходы для DS-K1T343
 SUCCESS_MINORS = {38, 39, 40, 75, 76, 77, 84, 85, 86, 87}
 
 
 class IsapiClient:
-    def __init__(self, conn: DeviceConn, timeout: float = 10.0):
+    def __init__(self, conn: DeviceConn, timeout: float = 15.0):
         self.conn = conn
         self.base = f"http://{conn.ip}:{conn.port}"
         self.auth = DigestAuth(conn.username, conn.password)
@@ -56,7 +54,6 @@ class IsapiClient:
 
     @staticmethod
     def _parse(r: httpx.Response) -> dict:
-        """Hikvision часто отдаёт XML c Content-Type: application/json — парсим оба формата."""
         text = (r.text or "").lstrip()
         try:
             if text.startswith("<"):
@@ -66,6 +63,20 @@ class IsapiClient:
         except Exception as e:
             log.warning("parse failed: %s; body=%s", e, text[:200])
             return {}
+
+    @staticmethod
+    def _success(data: dict) -> tuple[bool, str]:
+        """Hikvision возвращает ResponseStatus.statusCode == 1 при успехе."""
+        rs = data.get("ResponseStatus") or data
+        status_code = rs.get("statusCode") or rs.get("statusValue")
+        status_str = rs.get("statusString") or rs.get("subStatusCode") or ""
+        try:
+            ok = int(status_code or 0) == 1
+        except (TypeError, ValueError):
+            ok = False
+        return ok, str(status_str)
+
+    # ---------- info ----------
 
     async def test_connection(self) -> DeviceInfo:
         try:
@@ -84,6 +95,8 @@ class IsapiClient:
         except Exception as e:
             return DeviceInfo(online=False, detail=str(e)[:200])
 
+    # ---------- events ----------
+
     async def fetch_events(self, since: datetime, until: datetime) -> list[RawEvent]:
         events: list[RawEvent] = []
         search_id = str(uuid.uuid4())
@@ -98,15 +111,13 @@ class IsapiClient:
                             "searchID": search_id,
                             "searchResultPosition": position,
                             "maxResults": max_per_request,
-                            "major": 5,  # access controller events
-                            "minor": 0,  # 0 = все minor-коды
+                            "major": 5,
+                            "minor": 0,
                             "startTime": _fmt_iso(since),
                             "endTime": _fmt_iso(until),
                         }
                     }
-                    r = await c.post(
-                        "/ISAPI/AccessControl/AcsEvent?format=json", json=body
-                    )
+                    r = await c.post("/ISAPI/AccessControl/AcsEvent?format=json", json=body)
                     if r.status_code != 200:
                         log.warning("AcsEvent HTTP %s: %s", r.status_code, r.text[:200])
                         break
@@ -136,13 +147,15 @@ class IsapiClient:
                         minor = int(item.get("minor") or 0)
                         result_type = item.get("eventResultType")
                         success = (
-                            int(result_type) == 1 if result_type is not None else (minor in SUCCESS_MINORS)
+                            int(result_type) == 1
+                            if result_type is not None
+                            else (minor in SUCCESS_MINORS)
                         )
                         events.append(
                             RawEvent(
                                 external_user_id=str(ext_id),
                                 event_time=ev_time,
-                                event_type="entry",  # односторонний терминал; направление берётся из device.purpose
+                                event_type="entry",
                                 success=success,
                                 payload=item,
                             )
@@ -165,11 +178,147 @@ class IsapiClient:
 
         return events
 
-    async def upsert_user(self, external_id: str, full_name: str) -> None:
-        # TODO: PUT /ISAPI/AccessControl/UserInfo/SetUp?format=json
-        # с телом {"UserInfo": [{"employeeNo": external_id, "name": full_name, ...}]}
-        return None
+    # ---------- user / credentials ----------
 
-    async def delete_user(self, external_id: str) -> None:
-        # TODO: PUT /ISAPI/AccessControl/UserInfo/Delete?format=json
-        return None
+    async def upsert_user(self, external_id: str, full_name: str) -> EnrollResult:
+        """Создаёт или обновляет пользователя на устройстве (UserInfo/SetUp).
+
+        Hikvision требует employeeNo (числовая строка) и имя.
+        Здесь — постоянное действие, без срока годности.
+        """
+        body = {
+            "UserInfo": [
+                {
+                    "employeeNo": str(external_id),
+                    "name": full_name[:32],
+                    "userType": "normal",
+                    "Valid": {
+                        "enable": True,
+                        "beginTime": "2024-01-01T00:00:00",
+                        "endTime": "2037-12-31T23:59:59",
+                        "timeType": "local",
+                    },
+                    "doorRight": "1",
+                    "RightPlan": [{"doorNo": 1, "planTemplateNo": "1"}],
+                }
+            ]
+        }
+        try:
+            async with self._client() as c:
+                r = await c.put("/ISAPI/AccessControl/UserInfo/SetUp?format=json", json=body)
+                data = self._parse(r)
+                ok, detail = self._success(data)
+                if r.status_code != 200:
+                    return EnrollResult(success=False, detail=f"HTTP {r.status_code}: {r.text[:160]}")
+                return EnrollResult(
+                    success=ok,
+                    detail=detail or "OK",
+                    value_ref=str(external_id) if ok else None,
+                )
+        except Exception as e:
+            return EnrollResult(success=False, detail=str(e)[:200])
+
+    async def delete_user(self, external_id: str) -> EnrollResult:
+        body = {
+            "UserInfoDelCond": {
+                "EmployeeNoList": [{"employeeNo": str(external_id)}]
+            }
+        }
+        try:
+            async with self._client() as c:
+                r = await c.put("/ISAPI/AccessControl/UserInfoDetail/Delete?format=json", json=body)
+                data = self._parse(r)
+                ok, detail = self._success(data)
+                return EnrollResult(success=ok, detail=detail or "OK")
+        except Exception as e:
+            return EnrollResult(success=False, detail=str(e)[:200])
+
+    async def capture_fingerprint(self, external_id: str, finger_no: int = 1) -> EnrollResult:
+        """Запускает дистанционную регистрацию отпечатка.
+
+        Устройство покажет сообщение «Поднесите палец», сотрудник прикладывает 3 раза,
+        устройство возвращает результат.
+        """
+        body = {
+            "CaptureFingerPrintCond": {
+                "fingerNo": finger_no,
+                "employeeNo": str(external_id),
+            }
+        }
+        try:
+            async with self._client() as c:
+                # запрос может занимать до 30 секунд (ожидание сканирования)
+                r = await c.post(
+                    "/ISAPI/AccessControl/CaptureFingerPrint?format=json",
+                    json=body,
+                    timeout=40.0,
+                )
+                data = self._parse(r)
+                ok, detail = self._success(data)
+                fp_info = data.get("CaptureFingerPrint") or data
+                value = fp_info.get("fingerData") or fp_info.get("fingerPrintID")
+                return EnrollResult(
+                    success=ok,
+                    detail=detail or "OK",
+                    value_ref=f"FP-{finger_no}" if ok else None,
+                )
+        except Exception as e:
+            return EnrollResult(success=False, detail=str(e)[:200])
+
+    async def upload_face(self, external_id: str, image_bytes: bytes) -> EnrollResult:
+        """Загружает фото лица и привязывает к пользователю.
+
+        Использует /Intelligent/FDLib/FDSetUp (multipart): JSON-метаданные + JPEG.
+        """
+        face_info = {
+            "faceLibType": "blackFD",
+            "FDID": "1",
+            "FPID": str(external_id),
+        }
+        files = {
+            "FaceDataRecord": (
+                "FaceDataRecord.json",
+                json.dumps(face_info).encode(),
+                "application/json",
+            ),
+            "FaceImage": ("face.jpg", image_bytes, "image/jpeg"),
+        }
+        try:
+            async with self._client() as c:
+                r = await c.post(
+                    "/ISAPI/Intelligent/FDLib/FDSetUp?format=json&FDID=1&faceLibType=blackFD",
+                    files=files,
+                    timeout=30.0,
+                )
+                data = self._parse(r)
+                ok, detail = self._success(data)
+                return EnrollResult(
+                    success=ok,
+                    detail=detail or "OK",
+                    value_ref=f"FACE-{external_id}" if ok else None,
+                )
+        except Exception as e:
+            return EnrollResult(success=False, detail=str(e)[:200])
+
+    async def add_card(self, external_id: str, card_no: str) -> EnrollResult:
+        body = {
+            "CardInfo": [
+                {
+                    "employeeNo": str(external_id),
+                    "cardNo": str(card_no),
+                    "cardType": "normalCard",
+                }
+            ]
+        }
+        try:
+            async with self._client() as c:
+                r = await c.post("/ISAPI/AccessControl/CardInfo/Record?format=json", json=body)
+                data = self._parse(r)
+                ok, detail = self._success(data)
+                return EnrollResult(
+                    success=ok,
+                    detail=detail or "OK",
+                    value_ref=card_no[-4:].rjust(len(card_no), "*") if ok else None,
+                )
+        except Exception as e:
+            return EnrollResult(success=False, detail=str(e)[:200])

@@ -53,3 +53,33 @@ class EmployeeAccessOut(BaseModel):
     synced_at: datetime | None
 
     model_config = {"from_attributes": True}
+
+
+class CredentialOut(BaseModel):
+    id: UUID
+    type: str
+    value_ref: str | None
+    device_id: UUID | None
+    enrolled_at: datetime | None
+
+    model_config = {"from_attributes": True}
+
+
+class SyncToDeviceRequest(BaseModel):
+    device_id: UUID
+
+
+class FingerprintRequest(BaseModel):
+    device_id: UUID
+    finger_no: int = 1
+
+
+class CardRequest(BaseModel):
+    device_id: UUID
+    card_no: str
+
+
+class EnrollResponse(BaseModel):
+    success: bool
+    detail: str
+    value_ref: str | None = None

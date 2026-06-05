@@ -1,7 +1,6 @@
 """Абстракция над Hikvision-устройством.
 
 Реализации: MockClient (для разработки) и IsapiClient (реальный ISAPI).
-В этап 3 используется только Mock; ISAPI наполнится при подключении физического устройства.
 """
 from dataclasses import dataclass
 from datetime import datetime
@@ -33,8 +32,20 @@ class RawEvent:
     payload: dict
 
 
+@dataclass
+class EnrollResult:
+    success: bool
+    detail: str
+    value_ref: str | None = None  # ID шаблона или maskированный номер
+
+
 class HikvisionClient(Protocol):
     async def test_connection(self) -> DeviceInfo: ...
     async def fetch_events(self, since: datetime, until: datetime) -> list[RawEvent]: ...
-    async def upsert_user(self, external_id: str, full_name: str) -> None: ...
-    async def delete_user(self, external_id: str) -> None: ...
+    async def upsert_user(self, external_id: str, full_name: str) -> EnrollResult: ...
+    async def delete_user(self, external_id: str) -> EnrollResult: ...
+    async def capture_fingerprint(
+        self, external_id: str, finger_no: int = 1
+    ) -> EnrollResult: ...
+    async def upload_face(self, external_id: str, image_bytes: bytes) -> EnrollResult: ...
+    async def add_card(self, external_id: str, card_no: str) -> EnrollResult: ...

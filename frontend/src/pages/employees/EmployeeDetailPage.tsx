@@ -1,18 +1,31 @@
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ClipboardList, Cpu, FileBarChart, User } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  ArrowLeft,
+  ClipboardList,
+  CreditCard,
+  Cpu,
+  FileBarChart,
+  Fingerprint,
+  Loader2,
+  Scan,
+  Upload,
+  User,
+} from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { attendanceApi } from "@/api/attendance";
 import { devicesApi } from "@/api/devices";
-import { employeesApi } from "@/api/employees";
+import { employeesApi, type EnrollResult } from "@/api/employees";
 import { reportsApi } from "@/api/reports";
 import { Button } from "@/components/ui/Button";
 import { DataTable, type Column } from "@/components/ui/DataTable";
+import { Field, Input } from "@/components/ui/Input";
 import { PageHeader } from "@/components/ui/PageHeader";
 
 const TABS = [
   { key: "profile", label: "Профиль", icon: User },
   { key: "devices", label: "Устройства", icon: Cpu },
+  { key: "credentials", label: "Регистрация", icon: Fingerprint },
   { key: "history", label: "История", icon: ClipboardList },
   { key: "timesheet", label: "Табель", icon: FileBarChart },
 ] as const;
@@ -119,14 +132,14 @@ export default function EmployeeDetailPage() {
 
       {tab === "profile" && emp && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Field label="ФИО" value={`${emp.last_name} ${emp.first_name} ${emp.middle_name ?? ""}`} />
-          <Field label="Внешний ID" value={emp.external_id ?? "—"} />
-          <Field label="Должность" value={emp.position ?? "—"} />
-          <Field label="Телефон" value={emp.phone ?? "—"} />
-          <Field label="Email" value={emp.email ?? "—"} />
-          <Field label="Статус" value={emp.status === "active" ? "Активен" : "Отключён"} />
-          <Field label="Дата приёма" value={emp.hired_at ?? "—"} />
-          <Field label="Комментарий" value={emp.comment ?? "—"} />
+          <ProfileField label="ФИО" value={`${emp.last_name} ${emp.first_name} ${emp.middle_name ?? ""}`} />
+          <ProfileField label="Внешний ID" value={emp.external_id ?? "—"} />
+          <ProfileField label="Должность" value={emp.position ?? "—"} />
+          <ProfileField label="Телефон" value={emp.phone ?? "—"} />
+          <ProfileField label="Email" value={emp.email ?? "—"} />
+          <ProfileField label="Статус" value={emp.status === "active" ? "Активен" : "Отключён"} />
+          <ProfileField label="Дата приёма" value={emp.hired_at ?? "—"} />
+          <ProfileField label="Комментарий" value={emp.comment ?? "—"} />
         </div>
       )}
 
@@ -163,6 +176,10 @@ export default function EmployeeDetailPage() {
             </ul>
           )}
         </div>
+      )}
+
+      {tab === "credentials" && (
+        <CredentialsTab employeeId={id!} externalId={emp?.external_id ?? null} />
       )}
 
       {tab === "history" && (
@@ -248,11 +265,249 @@ export default function EmployeeDetailPage() {
   );
 }
 
-function Field({ label, value }: { label: string; value: string | null }) {
+function ProfileField({ label, value }: { label: string; value: string | null }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
       <div className="text-xs text-slate-500">{label}</div>
       <div className="mt-1 text-sm font-medium">{value || "—"}</div>
+    </div>
+  );
+}
+
+function CredentialsTab({
+  employeeId,
+  externalId,
+}: {
+  employeeId: string;
+  externalId: string | null;
+}) {
+  const qc = useQueryClient();
+  const devices = useQuery({
+    queryKey: ["devices", "all"],
+    queryFn: () => devicesApi.list({ page_size: 200 }),
+  });
+  const onlineDevices = useMemo(
+    () => (devices.data?.items ?? []).filter((d) => d.online),
+    [devices.data],
+  );
+  const [deviceId, setDeviceId] = useState<string>("");
+  const effectiveDevice = deviceId || onlineDevices[0]?.id || "";
+
+  const creds = useQuery({
+    queryKey: ["employee-credentials", employeeId],
+    queryFn: () => employeesApi.credentials(employeeId),
+  });
+
+  const [result, setResult] = useState<EnrollResult | null>(null);
+  const [cardNo, setCardNo] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function show(res: EnrollResult) {
+    setResult(res);
+    qc.invalidateQueries({ queryKey: ["employee-credentials", employeeId] });
+  }
+
+  const syncMut = useMutation({
+    mutationFn: () => employeesApi.syncToDevice(employeeId, effectiveDevice),
+    onSuccess: show,
+  });
+  const fpMut = useMutation({
+    mutationFn: () => employeesApi.enrollFingerprint(employeeId, effectiveDevice, 1),
+    onSuccess: show,
+  });
+  const faceMut = useMutation({
+    mutationFn: (file: File) => employeesApi.enrollFace(employeeId, effectiveDevice, file),
+    onSuccess: show,
+  });
+  const cardMut = useMutation({
+    mutationFn: () => employeesApi.addCard(employeeId, effectiveDevice, cardNo),
+    onSuccess: (res) => {
+      show(res);
+      if (res.success) setCardNo("");
+    },
+  });
+
+  if (!externalId) {
+    return (
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
+        Сначала заполните поле «ID сотрудника (для 1С)» — это employeeNo на устройстве.
+        Без него регистрация невозможна.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="mb-3 text-sm font-semibold">Целевое устройство</h2>
+        {onlineDevices.length === 0 ? (
+          <div className="text-sm text-slate-500">Нет онлайн-устройств. Проверьте связь.</div>
+        ) : (
+          <select
+            value={effectiveDevice}
+            onChange={(e) => setDeviceId(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+          >
+            {onlineDevices.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name} ({d.ip}:{d.port})
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {result && (
+        <div
+          className={`rounded-lg border px-4 py-3 text-sm ${
+            result.success
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300"
+              : "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-300"
+          }`}
+        >
+          {result.success ? "✅ " : "❌ "}
+          {result.detail}
+          {result.value_ref && <span className="ml-2 font-mono text-xs opacity-70">({result.value_ref})</span>}
+        </div>
+      )}
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Section
+          icon={Scan}
+          title="1. Регистрация пользователя на устройстве"
+          description={`Создаёт employeeNo=${externalId} на устройстве — это обязательный первый шаг перед добавлением отпечатка/лица/карты.`}
+        >
+          <Button
+            onClick={() => syncMut.mutate()}
+            disabled={!effectiveDevice || syncMut.isPending}
+          >
+            {syncMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            Отправить на устройство
+          </Button>
+        </Section>
+
+        <Section
+          icon={Fingerprint}
+          title="2. Отпечаток пальца"
+          description="После запуска устройство покажет «Поднесите палец». Сотруднику нужно приложить палец 3 раза."
+        >
+          <Button
+            onClick={() => fpMut.mutate()}
+            disabled={!effectiveDevice || fpMut.isPending}
+          >
+            {fpMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            Запросить регистрацию
+          </Button>
+          {fpMut.isPending && (
+            <p className="mt-2 text-xs text-slate-500">
+              Ожидание сканирования (до 30 сек)…
+            </p>
+          )}
+        </Section>
+
+        <Section
+          icon={Upload}
+          title="3. Лицо (загрузка фото)"
+          description="Выберите JPG-фото лица (анфас, без очков, на светлом фоне)."
+        >
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) faceMut.mutate(f);
+              e.target.value = "";
+            }}
+          />
+          <Button
+            variant="secondary"
+            onClick={() => fileRef.current?.click()}
+            disabled={!effectiveDevice || faceMut.isPending}
+          >
+            {faceMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            Выбрать фото
+          </Button>
+        </Section>
+
+        <Section
+          icon={CreditCard}
+          title="4. RFID-карта"
+          description="Введите номер карты — обычно 8–10 цифр на самой карте или в Hik-Connect."
+        >
+          <div className="flex gap-2">
+            <Field label="">
+              <Input
+                placeholder="напр. 12345678"
+                value={cardNo}
+                onChange={(e) => setCardNo(e.target.value.replace(/\s/g, ""))}
+              />
+            </Field>
+            <Button
+              onClick={() => cardMut.mutate()}
+              disabled={!effectiveDevice || !cardNo.trim() || cardMut.isPending}
+            >
+              {cardMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Привязать
+            </Button>
+          </div>
+        </Section>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="mb-3 text-sm font-semibold">Зарегистрированные учётные данные</h2>
+        {(creds.data?.length ?? 0) === 0 ? (
+          <div className="py-4 text-center text-sm text-slate-400">Пока ничего</div>
+        ) : (
+          <ul className="space-y-1.5 text-sm">
+            {creds.data?.map((c) => (
+              <li
+                key={c.id}
+                className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800"
+              >
+                <div>
+                  <span className="font-medium">
+                    {c.type === "fingerprint" && "Отпечаток"}
+                    {c.type === "face" && "Лицо"}
+                    {c.type === "card" && "Карта"}
+                    {c.type === "pin" && "PIN"}
+                  </span>
+                  {c.value_ref && (
+                    <span className="ml-2 font-mono text-xs text-slate-500">{c.value_ref}</span>
+                  )}
+                </div>
+                <div className="text-xs text-slate-500">
+                  {c.enrolled_at && new Date(c.enrolled_at).toLocaleString("ru-RU")}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Section({
+  icon: Icon,
+  title,
+  description,
+  children,
+}: {
+  icon: typeof Scan;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+      <div className="mb-2 flex items-center gap-2">
+        <Icon className="h-4 w-4 text-brand" />
+        <h3 className="text-sm font-semibold">{title}</h3>
+      </div>
+      <p className="mb-3 text-xs text-slate-500">{description}</p>
+      {children}
     </div>
   );
 }
