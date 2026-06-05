@@ -181,42 +181,64 @@ class IsapiClient:
     # ---------- user / credentials ----------
 
     async def upsert_user(self, external_id: str, full_name: str) -> EnrollResult:
-        """Создаёт или обновляет пользователя на устройстве (UserInfo/SetUp).
+        """Создаёт или обновляет пользователя на устройстве.
 
-        Hikvision требует employeeNo (числовая строка) и имя.
-        Здесь — постоянное действие, без срока годности.
+        Сначала пытается POST /UserInfo/Record (создание). Если пользователь
+        уже существует — повторяет через PUT /UserInfo/Modify (обновление).
         """
-        body = {
-            "UserInfo": [
-                {
-                    "employeeNo": str(external_id),
-                    "name": full_name[:32],
-                    "userType": "normal",
-                    "Valid": {
-                        "enable": True,
-                        "beginTime": "2024-01-01T00:00:00",
-                        "endTime": "2037-12-31T23:59:59",
-                        "timeType": "local",
-                    },
-                    "doorRight": "1",
-                    "RightPlan": [{"doorNo": 1, "planTemplateNo": "1"}],
-                }
-            ]
+        # Поле name на DS-K1T343 — utf-8, до ~32 байт; кириллица режется аккуратно
+        name_bytes = full_name.encode("utf-8")[:32]
+        safe_name = name_bytes.decode("utf-8", errors="ignore") or "Employee"
+
+        user_info = {
+            "employeeNo": str(external_id),
+            "name": safe_name,
+            "userType": "normal",
+            "Valid": {
+                "enable": False,  # false = бессрочно (Hikvision quirk)
+                "beginTime": "2020-01-01T00:00:00",
+                "endTime": "2037-12-31T23:59:59",
+            },
+            "doorRight": "1",
+            "RightPlan": [{"doorNo": 1, "planTemplateNo": "1"}],
         }
-        try:
+        body = {"UserInfo": [user_info]}
+
+        async def _call(method: str, path: str) -> tuple[httpx.Response, dict, bool, str]:
             async with self._client() as c:
-                r = await c.put("/ISAPI/AccessControl/UserInfo/SetUp?format=json", json=body)
+                r = await c.request(method, path, json=body)
                 data = self._parse(r)
                 ok, detail = self._success(data)
-                if r.status_code != 200:
-                    return EnrollResult(success=False, detail=f"HTTP {r.status_code}: {r.text[:160]}")
-                return EnrollResult(
-                    success=ok,
-                    detail=detail or "OK",
-                    value_ref=str(external_id) if ok else None,
+                return r, data, ok, detail
+
+        try:
+            # 1) попытка создать
+            r, data, ok, detail = await _call(
+                "POST", "/ISAPI/AccessControl/UserInfo/Record?format=json"
+            )
+
+            # 2) если уже существует — обновить
+            sub = (data.get("ResponseStatus") or data).get("subStatusCode", "")
+            if not ok and ("xist" in detail.lower() or "exist" in str(sub).lower() or
+                           "userExist" in str(sub)):
+                r, data, ok, detail = await _call(
+                    "PUT", "/ISAPI/AccessControl/UserInfo/Modify?format=json"
                 )
+
+            if not ok:
+                body_text = r.text[:500] if r.text else ""
+                err_detail = detail or sub or "Unknown error"
+                return EnrollResult(
+                    success=False,
+                    detail=f"HTTP {r.status_code}: {err_detail} · {body_text}"[:600],
+                )
+            return EnrollResult(
+                success=True,
+                detail=f"OK · employeeNo={external_id}",
+                value_ref=str(external_id),
+            )
         except Exception as e:
-            return EnrollResult(success=False, detail=str(e)[:200])
+            return EnrollResult(success=False, detail=f"Exception: {e}"[:400])
 
     async def delete_user(self, external_id: str) -> EnrollResult:
         body = {
