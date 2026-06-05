@@ -338,6 +338,10 @@ function CredentialsTab({
       if (res.success) setCardNo("");
     },
   });
+  const cardCaptureMut = useMutation({
+    mutationFn: () => employeesApi.captureCard(employeeId, effectiveDevice),
+    onSuccess: show,
+  });
 
   if (!externalId) {
     return (
@@ -462,17 +466,30 @@ function CredentialsTab({
         <Section
           icon={CreditCard}
           title="4. RFID-карта"
-          description="Введите номер карты — обычно 8–10 цифр на самой карте или в Hik-Connect."
+          description="«Считать с устройства» — терминал перейдёт в режим ожидания, сотрудник приложит карту, номер запишется автоматически. Или введите номер вручную."
         >
-          <div className="flex gap-2">
+          <Button
+            onClick={() => cardCaptureMut.mutate()}
+            disabled={!effectiveDevice || cardCaptureMut.isPending}
+          >
+            {cardCaptureMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            <CreditCard className="h-4 w-4" /> Считать с устройства
+          </Button>
+          {cardCaptureMut.isPending && (
+            <p className="mt-2 text-xs text-slate-500">
+              Приложите карту к терминалу (до 30 сек)…
+            </p>
+          )}
+          <div className="mt-3 flex gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
             <Field label="">
               <Input
-                placeholder="напр. 12345678"
+                placeholder="или введите номер вручную"
                 value={cardNo}
                 onChange={(e) => setCardNo(e.target.value.replace(/\s/g, ""))}
               />
             </Field>
             <Button
+              variant="secondary"
               onClick={() => cardMut.mutate()}
               disabled={!effectiveDevice || !cardNo.trim() || cardMut.isPending}
             >

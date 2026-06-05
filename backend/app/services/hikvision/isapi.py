@@ -490,6 +490,77 @@ class IsapiClient:
         except Exception as e:
             return EnrollResult(success=False, detail=str(e)[:200])
 
+    async def capture_card(self, external_id: str) -> EnrollResult:
+        """Переводит устройство в режим считывания карты.
+
+        На экране терминала появится «Приложите карту». Сотрудник прикладывает
+        карту → её номер считывается и автоматически привязывается к employeeNo.
+        """
+        xml_body = (
+            f'<?xml version="1.0" encoding="UTF-8"?>'
+            f'<CaptureCardInfoCond version="2.0" '
+            f'xmlns="http://www.isapi.org/ver20/XMLSchema">'
+            f"<cardReaderNo>1</cardReaderNo>"
+            f"<timeout>30</timeout>"
+            f"</CaptureCardInfoCond>"
+        )
+
+        async def _try_xml(path: str):
+            async with self._client() as c:
+                r = await c.post(
+                    path,
+                    headers={"Content-Type": "application/xml"},
+                    content=xml_body,
+                    timeout=60.0,
+                )
+                return r, self._parse(r)
+
+        async def _try_json(path: str):
+            async with self._client() as c:
+                r = await c.post(
+                    path,
+                    json={"CaptureCardInfoCond": {"cardReaderNo": 1, "timeout": 30}},
+                    timeout=60.0,
+                )
+                return r, self._parse(r)
+
+        last_r = None
+        last_data: dict = {}
+        last_detail = ""
+        try:
+            for func in (
+                lambda: _try_xml("/ISAPI/AccessControl/CaptureCardInfo"),
+                lambda: _try_json("/ISAPI/AccessControl/CaptureCardInfo?format=json"),
+            ):
+                last_r, last_data = await func()
+                ok, last_detail = self._success(last_data)
+                if ok:
+                    # Извлечь номер карты из ответа
+                    info = last_data.get("CaptureCardInfo") or last_data
+                    card_no = (
+                        info.get("cardNo")
+                        or info.get("CardInfo", {}).get("cardNo")
+                        or ""
+                    )
+                    if not card_no:
+                        return EnrollResult(
+                            success=False,
+                            detail="Устройство ответило OK, но номер карты не получен",
+                        )
+                    # Сразу привяжем к сотруднику
+                    return await self.add_card(external_id, str(card_no))
+                if last_r.status_code == 404:
+                    continue
+                break
+            return EnrollResult(
+                success=False,
+                detail=self._friendly_error(last_data, last_r, last_detail)
+                if last_r is not None
+                else "Не удалось обратиться к устройству",
+            )
+        except Exception as e:
+            return EnrollResult(success=False, detail=str(e)[:200])
+
     async def add_card(self, external_id: str, card_no: str) -> EnrollResult:
         # Прошивка V4.48 — одиночный объект CardInfo
         body = {

@@ -70,4 +70,8 @@ export const employeesApi = {
     api
       .post<EnrollResult>(`/employees/${id}/add-card`, { device_id, card_no })
       .then((r) => r.data),
+  captureCard: (id: string, device_id: string) =>
+    api
+      .post<EnrollResult>(`/employees/${id}/capture-card`, { device_id })
+      .then((r) => r.data),
 };
