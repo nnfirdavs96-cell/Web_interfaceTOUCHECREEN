@@ -181,13 +181,12 @@ class IsapiClient:
     # ---------- user / credentials ----------
 
     async def upsert_user(self, external_id: str, full_name: str) -> EnrollResult:
-        """Создаёт или обновляет пользователя на устройстве.
+        """Создаёт/обновляет пользователя на устройстве.
 
-        Сначала пытается POST /UserInfo/Record (создание). Если пользователь
-        уже существует — повторяет через PUT /UserInfo/Modify (обновление).
+        Прошивка DS-K1T343 V4.48 хочет одиночный объект `UserInfo` (не массив).
+        Сначала POST /UserInfo/Record, при «exists» — PUT /UserInfo/Modify.
         """
-        # Поле name на DS-K1T343 — utf-8, до ~32 байт; кириллица режется аккуратно
-        name_bytes = full_name.encode("utf-8")[:32]
+        name_bytes = full_name.encode("utf-8")[:128]
         safe_name = name_bytes.decode("utf-8", errors="ignore") or "Employee"
 
         user_info = {
@@ -195,14 +194,15 @@ class IsapiClient:
             "name": safe_name,
             "userType": "normal",
             "Valid": {
-                "enable": False,  # false = бессрочно (Hikvision quirk)
-                "beginTime": "2020-01-01T00:00:00",
+                "enable": True,
+                "beginTime": "2024-01-01T00:00:00",
                 "endTime": "2037-12-31T23:59:59",
+                "timeType": "local",
             },
             "doorRight": "1",
             "RightPlan": [{"doorNo": 1, "planTemplateNo": "1"}],
         }
-        body = {"UserInfo": [user_info]}
+        body = {"UserInfo": user_info}  # одиночный объект, не массив!
 
         async def _call(method: str, path: str) -> tuple[httpx.Response, dict, bool, str]:
             async with self._client() as c:
@@ -212,25 +212,25 @@ class IsapiClient:
                 return r, data, ok, detail
 
         try:
-            # 1) попытка создать
+            # 1) создать
             r, data, ok, detail = await _call(
                 "POST", "/ISAPI/AccessControl/UserInfo/Record?format=json"
             )
 
             # 2) если уже существует — обновить
-            sub = (data.get("ResponseStatus") or data).get("subStatusCode", "")
-            if not ok and ("xist" in detail.lower() or "exist" in str(sub).lower() or
-                           "userExist" in str(sub)):
+            rs = data.get("ResponseStatus") or data
+            sub = str(rs.get("subStatusCode") or "")
+            if not ok and ("exist" in sub.lower() or "exist" in detail.lower()):
                 r, data, ok, detail = await _call(
                     "PUT", "/ISAPI/AccessControl/UserInfo/Modify?format=json"
                 )
 
             if not ok:
-                body_text = r.text[:500] if r.text else ""
-                err_detail = detail or sub or "Unknown error"
+                rs = data.get("ResponseStatus") or data
+                err = rs.get("errorMsg") or rs.get("subStatusCode") or detail or r.text[:400]
                 return EnrollResult(
                     success=False,
-                    detail=f"HTTP {r.status_code}: {err_detail} · {body_text}"[:600],
+                    detail=f"HTTP {r.status_code}: {err}"[:600],
                 )
             return EnrollResult(
                 success=True,
@@ -248,7 +248,9 @@ class IsapiClient:
         }
         try:
             async with self._client() as c:
-                r = await c.put("/ISAPI/AccessControl/UserInfoDetail/Delete?format=json", json=body)
+                r = await c.put(
+                    "/ISAPI/AccessControl/UserInfo/Delete?format=json", json=body
+                )
                 data = self._parse(r)
                 ok, detail = self._success(data)
                 return EnrollResult(success=ok, detail=detail or "OK")
@@ -256,10 +258,10 @@ class IsapiClient:
             return EnrollResult(success=False, detail=str(e)[:200])
 
     async def capture_fingerprint(self, external_id: str, finger_no: int = 1) -> EnrollResult:
-        """Запускает дистанционную регистрацию отпечатка.
+        """Дистанционная регистрация отпечатка.
 
-        Устройство покажет сообщение «Поднесите палец», сотрудник прикладывает 3 раза,
-        устройство возвращает результат.
+        Устройство покажет «Поднесите палец» — сотрудник прикладывает 3 раза.
+        Запрос может ждать до 30+ секунд.
         """
         body = {
             "CaptureFingerPrintCond": {
@@ -269,26 +271,27 @@ class IsapiClient:
         }
         try:
             async with self._client() as c:
-                # запрос может занимать до 30 секунд (ожидание сканирования)
                 r = await c.post(
                     "/ISAPI/AccessControl/CaptureFingerPrint?format=json",
                     json=body,
-                    timeout=40.0,
+                    timeout=60.0,
                 )
                 data = self._parse(r)
                 ok, detail = self._success(data)
-                fp_info = data.get("CaptureFingerPrint") or data
-                value = fp_info.get("fingerData") or fp_info.get("fingerPrintID")
+                if not ok:
+                    rs = data.get("ResponseStatus") or data
+                    err = rs.get("errorMsg") or rs.get("subStatusCode") or detail or r.text[:300]
+                    return EnrollResult(success=False, detail=f"HTTP {r.status_code}: {err}"[:500])
                 return EnrollResult(
-                    success=ok,
-                    detail=detail or "OK",
-                    value_ref=f"FP-{finger_no}" if ok else None,
+                    success=True,
+                    detail=f"OK · палец #{finger_no} зарегистрирован",
+                    value_ref=f"FP-{finger_no}",
                 )
         except Exception as e:
             return EnrollResult(success=False, detail=str(e)[:200])
 
     async def upload_face(self, external_id: str, image_bytes: bytes) -> EnrollResult:
-        """Загружает фото лица и привязывает к пользователю.
+        """Загружает фото лица и привязывает к пользователю на устройстве.
 
         Использует /Intelligent/FDLib/FDSetUp (multipart): JSON-метаданные + JPEG.
         """
@@ -303,7 +306,7 @@ class IsapiClient:
                 json.dumps(face_info).encode(),
                 "application/json",
             ),
-            "FaceImage": ("face.jpg", image_bytes, "image/jpeg"),
+            "img": ("face.jpg", image_bytes, "image/jpeg"),
         }
         try:
             async with self._client() as c:
@@ -314,33 +317,42 @@ class IsapiClient:
                 )
                 data = self._parse(r)
                 ok, detail = self._success(data)
+                if not ok:
+                    rs = data.get("ResponseStatus") or data
+                    err = rs.get("errorMsg") or rs.get("subStatusCode") or detail or r.text[:300]
+                    return EnrollResult(success=False, detail=f"HTTP {r.status_code}: {err}"[:500])
                 return EnrollResult(
-                    success=ok,
-                    detail=detail or "OK",
-                    value_ref=f"FACE-{external_id}" if ok else None,
+                    success=True,
+                    detail="OK · фото лица загружено",
+                    value_ref=f"FACE-{external_id}",
                 )
         except Exception as e:
             return EnrollResult(success=False, detail=str(e)[:200])
 
     async def add_card(self, external_id: str, card_no: str) -> EnrollResult:
+        # Прошивка V4.48 — одиночный объект CardInfo
         body = {
-            "CardInfo": [
-                {
-                    "employeeNo": str(external_id),
-                    "cardNo": str(card_no),
-                    "cardType": "normalCard",
-                }
-            ]
+            "CardInfo": {
+                "employeeNo": str(external_id),
+                "cardNo": str(card_no),
+                "cardType": "normalCard",
+            }
         }
         try:
             async with self._client() as c:
-                r = await c.post("/ISAPI/AccessControl/CardInfo/Record?format=json", json=body)
+                r = await c.post(
+                    "/ISAPI/AccessControl/CardInfo/Record?format=json", json=body
+                )
                 data = self._parse(r)
                 ok, detail = self._success(data)
+                if not ok:
+                    rs = data.get("ResponseStatus") or data
+                    err = rs.get("errorMsg") or rs.get("subStatusCode") or detail or r.text[:300]
+                    return EnrollResult(success=False, detail=f"HTTP {r.status_code}: {err}"[:500])
                 return EnrollResult(
-                    success=ok,
-                    detail=detail or "OK",
-                    value_ref=card_no[-4:].rjust(len(card_no), "*") if ok else None,
+                    success=True,
+                    detail="OK",
+                    value_ref=card_no[-4:].rjust(len(card_no), "*"),
                 )
         except Exception as e:
             return EnrollResult(success=False, detail=str(e)[:200])
