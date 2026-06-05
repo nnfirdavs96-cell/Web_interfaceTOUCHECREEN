@@ -105,6 +105,42 @@ async def test_connection(
     )
 
 
+@router.get("/{device_id}/snapshot")
+async def device_snapshot(
+    device_id: UUID,
+    t: str | None = None,  # JWT в query — для <img src> чтобы не плодить хедеры
+    db: Session = Depends(get_db),
+):
+    """JPEG-снимок с камеры устройства (для live-превью в UI).
+
+    Принимает токен через ?t= чтобы можно было использовать в <img src>.
+    """
+    from fastapi import HTTPException
+    from fastapi.responses import Response
+
+    from app.core.security import decode_token
+
+    if not t:
+        raise HTTPException(status_code=401, detail="token required")
+    try:
+        payload = decode_token(t)
+        if payload.get("type") != "access":
+            raise HTTPException(status_code=401, detail="invalid token")
+    except Exception:
+        raise HTTPException(status_code=401, detail="invalid token") from None
+
+    device = crud.get_or_404(db, Device, device_id)
+    client = HikvisionService.client_for(device)
+    img = await client.get_snapshot()
+    if img is None:
+        return Response(status_code=503, content=b"camera unavailable")
+    return Response(
+        content=img,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
 @router.post("/{device_id}/sync", status_code=202)
 async def sync_device(
     device_id: UUID,

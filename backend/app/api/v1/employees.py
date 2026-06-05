@@ -299,13 +299,25 @@ async def capture_face(
     db: Session = Depends(get_db),
     user: User = Depends(require("employees.write")),
 ):
-    """Запускает сканирование лица камерой устройства (альтернатива загрузке файла)."""
+    """Делает снимок с камеры устройства и заливает его как фото лица сотрудника.
+
+    Более надёжно чем CaptureFaceData (которого нет в V4.48 на DS-K1T343).
+    Шаги: 1) GET snapshot с камеры → 2) upload_face через FDLib.
+    """
     emp = crud.get_or_404(db, Employee, emp_id)
     if not emp.external_id:
         raise HTTPException(status_code=400, detail="Сначала укажите external_id сотрудника")
     device = _get_device(db, body.device_id)
     client = HikvisionService.client_for(device)
-    res = await client.capture_face(emp.external_id)
+
+    snapshot = await client.get_snapshot()
+    if snapshot is None:
+        res = await client.capture_face(emp.external_id)
+    else:
+        res = await client.upload_face(emp.external_id, snapshot)
+        if not res.detail.startswith("OK"):
+            res.detail = f"{res.detail} (снимок {len(snapshot)} байт)"
+
     if res.success:
         _save_credential(db, emp.id, device.id, "face", res.value_ref)
     audit.log(

@@ -382,6 +382,23 @@ class IsapiClient:
         except Exception as e:
             return EnrollResult(success=False, detail=str(e)[:200])
 
+    async def get_snapshot(self) -> bytes | None:
+        """Возвращает JPEG-снимок с камеры устройства (для live-превью)."""
+        # На DS-K1T343 камера обычно channel 1
+        for path in (
+            "/ISAPI/Streaming/channels/1/picture",
+            "/ISAPI/Streaming/channels/101/picture",
+        ):
+            try:
+                async with self._client() as c:
+                    r = await c.get(path, timeout=5.0)
+                    if r.status_code == 200 and r.content and len(r.content) > 100:
+                        return r.content
+            except Exception as e:
+                log.debug("snapshot %s failed: %s", path, e)
+                continue
+        return None
+
     async def upload_face(self, external_id: str, image_bytes: bytes) -> EnrollResult:
         """Загружает фото лица и привязывает к пользователю на устройстве.
 

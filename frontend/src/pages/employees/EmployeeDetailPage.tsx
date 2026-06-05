@@ -22,6 +22,8 @@ import { Button } from "@/components/ui/Button";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Field, Input } from "@/components/ui/Input";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useAuthStore } from "@/stores/auth";
+import { useEffect } from "react";
 
 const TABS = [
   { key: "profile", label: "Профиль", icon: User },
@@ -367,6 +369,8 @@ function CredentialsTab({
         )}
       </div>
 
+      {effectiveDevice && <LiveCamera deviceId={effectiveDevice} />}
+
       {result && (
         <div
           className={`rounded-lg border px-4 py-3 text-sm ${
@@ -418,7 +422,7 @@ function CredentialsTab({
         <Section
           icon={Camera}
           title="3. Лицо"
-          description="Сканировать камерой устройства (сотрудник смотрит в камеру) или загрузить готовое JPG-фото."
+          description="«Сделать снимок» — возьмёт текущий кадр с камеры устройства (см. live-превью выше). «Загрузить фото» — выбрать готовый JPG."
         >
           <input
             ref={fileRef}
@@ -437,7 +441,7 @@ function CredentialsTab({
               disabled={!effectiveDevice || faceCaptureMut.isPending}
             >
               {faceCaptureMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              <Camera className="h-4 w-4" /> Сканировать камерой
+              <Camera className="h-4 w-4" /> Сделать снимок
             </Button>
             <Button
               variant="secondary"
@@ -450,7 +454,7 @@ function CredentialsTab({
           </div>
           {faceCaptureMut.isPending && (
             <p className="mt-2 text-xs text-slate-500">
-              Посмотрите в камеру устройства (до 60 сек)…
+              Снимок с камеры → загрузка на устройство…
             </p>
           )}
         </Section>
@@ -509,6 +513,47 @@ function CredentialsTab({
           </ul>
         )}
       </div>
+    </div>
+  );
+}
+
+function LiveCamera({ deviceId }: { deviceId: string }) {
+  const token = useAuthStore((s) => s.accessToken);
+  const [tick, setTick] = useState(() => Date.now());
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    setError(false);
+    const id = window.setInterval(() => setTick(Date.now()), 1500);
+    return () => window.clearInterval(id);
+  }, [deviceId]);
+
+  if (!token) return null;
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-900 p-3 dark:border-slate-800">
+      <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
+        <span className="flex items-center gap-2">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+          LIVE с камеры устройства
+        </span>
+        <span className="text-[10px]">{new Date(tick).toLocaleTimeString("ru-RU")}</span>
+      </div>
+      {error ? (
+        <div className="flex h-48 items-center justify-center rounded-lg bg-slate-800 text-sm text-slate-400">
+          Камера недоступна (нет связи или модель без видео-канала)
+        </div>
+      ) : (
+        <img
+          src={devicesApi.snapshotUrl(deviceId, token, tick)}
+          alt="live"
+          className="mx-auto max-h-72 rounded-lg"
+          onError={() => setError(true)}
+        />
+      )}
+      <p className="mt-2 text-center text-[10px] text-slate-500">
+        Обновление каждые 1.5 секунды
+      </p>
     </div>
   );
 }
