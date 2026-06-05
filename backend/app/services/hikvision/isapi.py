@@ -423,28 +423,38 @@ class IsapiClient:
     ) -> EnrollResult:
         """Загружает фото лица в библиотеку распознавания (HCFaceLibblackFD).
 
-        Endpoint POST /Intelligent/FDLib/FDSetUp реально делает face detection
-        и сохраняет лицо. Если лица не видно — вернёт SubpicAnalysisModelingError.
+        POST /Intelligent/FDLib/FDSetUp реально делает face detection и сохраняет.
+        Multipart собран вручную (как curl), потому что httpx добавляет
+        filename="" в form-field части и устройство возвращает methodNotAllowed.
         """
         face_info = {
             "faceLibType": "blackFD",
             "FDID": "1",
             "FPID": str(external_id),
         }
-        files = {
-            "FaceDataRecord": (
-                None,
-                json.dumps(face_info).encode(),
-                "application/json",
-            ),
-            "img": ("face.jpg", image_bytes, "image/jpeg"),
-        }
+        boundary = "----HikBoundary7MA4YWxkTrZu0gW"
+        face_json = json.dumps(face_info).encode()
+
+        body = (
+            f"--{boundary}\r\n"
+            'Content-Disposition: form-data; name="FaceDataRecord"\r\n'
+            "Content-Type: application/json\r\n\r\n"
+        ).encode() + face_json + (
+            f"\r\n--{boundary}\r\n"
+            'Content-Disposition: form-data; name="img"; filename="face.jpg"\r\n'
+            "Content-Type: image/jpeg\r\n\r\n"
+        ).encode() + image_bytes + (
+            f"\r\n--{boundary}--\r\n"
+        ).encode()
+
+        headers = {"Content-Type": f"multipart/form-data; boundary={boundary}"}
         try:
             async with self._client() as c:
                 r = await c.post(
                     "/ISAPI/Intelligent/FDLib/FDSetUp"
                     "?format=json&FDID=1&faceLibType=blackFD",
-                    files=files,
+                    content=body,
+                    headers=headers,
                     timeout=30.0,
                 )
                 data = self._parse(r)
