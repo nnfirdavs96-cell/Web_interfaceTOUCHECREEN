@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  Camera,
   ClipboardList,
   CreditCard,
   Cpu,
@@ -324,6 +325,10 @@ function CredentialsTab({
     mutationFn: (file: File) => employeesApi.enrollFace(employeeId, effectiveDevice, file),
     onSuccess: show,
   });
+  const faceCaptureMut = useMutation({
+    mutationFn: () => employeesApi.captureFace(employeeId, effectiveDevice),
+    onSuccess: show,
+  });
   const cardMut = useMutation({
     mutationFn: () => employeesApi.addCard(employeeId, effectiveDevice, cardNo),
     onSuccess: (res) => {
@@ -411,9 +416,9 @@ function CredentialsTab({
         </Section>
 
         <Section
-          icon={Upload}
-          title="3. Лицо (загрузка фото)"
-          description="Выберите JPG-фото лица (анфас, без очков, на светлом фоне)."
+          icon={Camera}
+          title="3. Лицо"
+          description="Сканировать камерой устройства (сотрудник смотрит в камеру) или загрузить готовое JPG-фото."
         >
           <input
             ref={fileRef}
@@ -426,14 +431,28 @@ function CredentialsTab({
               e.target.value = "";
             }}
           />
-          <Button
-            variant="secondary"
-            onClick={() => fileRef.current?.click()}
-            disabled={!effectiveDevice || faceMut.isPending}
-          >
-            {faceMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            Выбрать фото
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => faceCaptureMut.mutate()}
+              disabled={!effectiveDevice || faceCaptureMut.isPending}
+            >
+              {faceCaptureMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              <Camera className="h-4 w-4" /> Сканировать камерой
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => fileRef.current?.click()}
+              disabled={!effectiveDevice || faceMut.isPending}
+            >
+              {faceMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              <Upload className="h-4 w-4" /> Загрузить фото
+            </Button>
+          </div>
+          {faceCaptureMut.isPending && (
+            <p className="mt-2 text-xs text-slate-500">
+              Посмотрите в камеру устройства (до 60 сек)…
+            </p>
+          )}
         </Section>
 
         <Section

@@ -57,6 +57,14 @@ class MockClient:
             value_ref=f"FP-{external_id}-{finger_no}",
         )
 
+    async def capture_face(self, external_id: str) -> EnrollResult:
+        await asyncio.sleep(0.1)
+        return EnrollResult(
+            success=True,
+            detail=f"mock: face captured via device camera for {external_id}",
+            value_ref=f"FACE-{external_id}",
+        )
+
     async def upload_face(self, external_id: str, image_bytes: bytes) -> EnrollResult:
         await asyncio.sleep(0.1)
         return EnrollResult(

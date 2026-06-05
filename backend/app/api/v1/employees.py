@@ -291,6 +291,36 @@ async def enroll_fingerprint(
     return EnrollResponse(success=res.success, detail=res.detail, value_ref=res.value_ref)
 
 
+@router.post("/{emp_id}/capture-face", response_model=EnrollResponse)
+async def capture_face(
+    emp_id: UUID,
+    body: SyncToDeviceRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require("employees.write")),
+):
+    """Запускает сканирование лица камерой устройства (альтернатива загрузке файла)."""
+    emp = crud.get_or_404(db, Employee, emp_id)
+    if not emp.external_id:
+        raise HTTPException(status_code=400, detail="Сначала укажите external_id сотрудника")
+    device = _get_device(db, body.device_id)
+    client = HikvisionService.client_for(device)
+    res = await client.capture_face(emp.external_id)
+    if res.success:
+        _save_credential(db, emp.id, device.id, "face", res.value_ref)
+    audit.log(
+        db,
+        user=user,
+        action="capture-face",
+        entity_type="employee",
+        entity_id=emp.id,
+        after={"success": res.success, "detail": res.detail},
+        request=request,
+    )
+    db.commit()
+    return EnrollResponse(success=res.success, detail=res.detail, value_ref=res.value_ref)
+
+
 @router.post("/{emp_id}/enroll-face", response_model=EnrollResponse)
 async def enroll_face(
     emp_id: UUID,
