@@ -53,6 +53,10 @@ export const employeesApi = {
     api
       .post<EnrollResult>(`/employees/${id}/enroll-fingerprint`, { device_id, finger_no })
       .then((r) => r.data),
+  captureFace: (id: string, device_id: string) =>
+    api
+      .post<EnrollResult>(`/employees/${id}/capture-face`, { device_id })
+      .then((r) => r.data),
   enrollFace: (id: string, device_id: string, file: File) => {
     const form = new FormData();
     form.append("file", file);

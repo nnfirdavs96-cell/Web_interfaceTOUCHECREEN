@@ -283,32 +283,101 @@ class IsapiClient:
         """Дистанционная регистрация отпечатка.
 
         Устройство покажет «Поднесите палец» — сотрудник прикладывает 3 раза.
-        Запрос может ждать до 30+ секунд.
+        V4.48 prefers XML body for this endpoint (returns badXmlContent on JSON).
         """
-        body = {
-            "CaptureFingerPrintCond": {
-                "fingerNo": finger_no,
-                "employeeNo": str(external_id),
-            }
-        }
+        xml_body = (
+            f'<?xml version="1.0" encoding="UTF-8"?>'
+            f'<CaptureFingerPrintCond version="2.0" '
+            f'xmlns="http://www.isapi.org/ver20/XMLSchema">'
+            f"<fingerNo>{finger_no}</fingerNo>"
+            f"<employeeNo>{external_id}</employeeNo>"
+            f"</CaptureFingerPrintCond>"
+        )
+
+        async def _try(headers: dict, body, path: str):
+            async with self._client() as c:
+                r = await c.post(path, headers=headers, content=body, timeout=60.0)
+                return r, self._parse(r)
+
+        try:
+            # 1) XML на основной endpoint (для V4.48)
+            r, data = await _try(
+                {"Content-Type": "application/xml"},
+                xml_body,
+                "/ISAPI/AccessControl/CaptureFingerPrint",
+            )
+            ok, detail = self._success(data)
+
+            # 2) если badXml/badJson — попробовать JSON с ?format=json
+            sub = str((data.get("ResponseStatus") or data).get("subStatusCode") or "")
+            if not ok and ("xml" in sub.lower() or "json" in sub.lower() or r.status_code == 400):
+                import json as _json
+                body = _json.dumps({
+                    "CaptureFingerPrintCond": {
+                        "fingerNo": finger_no, "employeeNo": str(external_id),
+                    }
+                })
+                r, data = await _try(
+                    {"Content-Type": "application/json"},
+                    body,
+                    "/ISAPI/AccessControl/CaptureFingerPrint?format=json",
+                )
+                ok, detail = self._success(data)
+
+            if not ok:
+                return EnrollResult(
+                    success=False, detail=self._friendly_error(data, r, detail)
+                )
+            return EnrollResult(
+                success=True,
+                detail=f"OK · палец #{finger_no} — приложите палец к устройству",
+                value_ref=f"FP-{finger_no}",
+            )
+        except Exception as e:
+            return EnrollResult(success=False, detail=str(e)[:200])
+
+    async def capture_face(self, external_id: str) -> EnrollResult:
+        """Удалённый запуск сканирования лица камерой устройства.
+
+        Устройство покажет рамку для лица — сотрудник смотрит в камеру.
+        Альтернатива загрузке готового фото.
+        """
+        xml_body = (
+            f'<?xml version="1.0" encoding="UTF-8"?>'
+            f'<CaptureFaceDataCond version="2.0" '
+            f'xmlns="http://www.isapi.org/ver20/XMLSchema">'
+            f"<employeeNo>{external_id}</employeeNo>"
+            f"</CaptureFaceDataCond>"
+        )
         try:
             async with self._client() as c:
+                # сначала XML (как с отпечатком)
                 r = await c.post(
-                    "/ISAPI/AccessControl/CaptureFingerPrint?format=json",
-                    json=body,
+                    "/ISAPI/AccessControl/CaptureFaceData",
+                    headers={"Content-Type": "application/xml"},
+                    content=xml_body,
                     timeout=60.0,
                 )
                 data = self._parse(r)
                 ok, detail = self._success(data)
+                sub = str((data.get("ResponseStatus") or data).get("subStatusCode") or "")
+                # fallback на JSON
+                if not ok and ("xml" in sub.lower() or "json" in sub.lower() or r.status_code == 400):
+                    r = await c.post(
+                        "/ISAPI/AccessControl/CaptureFaceData?format=json",
+                        json={"CaptureFaceDataCond": {"employeeNo": str(external_id)}},
+                        timeout=60.0,
+                    )
+                    data = self._parse(r)
+                    ok, detail = self._success(data)
                 if not ok:
                     return EnrollResult(
-                        success=False,
-                        detail=self._friendly_error(data, r, detail),
+                        success=False, detail=self._friendly_error(data, r, detail)
                     )
                 return EnrollResult(
                     success=True,
-                    detail=f"OK · палец #{finger_no} зарегистрирован",
-                    value_ref=f"FP-{finger_no}",
+                    detail="OK · посмотрите в камеру устройства",
+                    value_ref=f"FACE-{external_id}",
                 )
         except Exception as e:
             return EnrollResult(success=False, detail=str(e)[:200])
