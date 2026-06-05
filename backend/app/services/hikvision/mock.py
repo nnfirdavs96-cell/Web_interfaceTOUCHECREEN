@@ -72,7 +72,9 @@ class MockClient:
             value_ref=f"FACE-{external_id}",
         )
 
-    async def upload_face(self, external_id: str, image_bytes: bytes) -> EnrollResult:
+    async def upload_face(
+        self, external_id: str, image_bytes: bytes, full_name: str = ""
+    ) -> EnrollResult:
         await asyncio.sleep(0.1)
         return EnrollResult(
             success=True,

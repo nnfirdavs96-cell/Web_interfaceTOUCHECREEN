@@ -310,16 +310,19 @@ async def capture_face(
     device = _get_device(db, body.device_id)
     client = HikvisionService.client_for(device)
 
+    full_name = " ".join(filter(None, [emp.last_name, emp.first_name, emp.middle_name]))
     res = await client.capture_face(emp.external_id)
 
     # Fallback: snapshot → upload, если notSupport / 404 / прочие проблемы
     if not res.success:
         snapshot = await client.get_snapshot()
         if snapshot is not None:
-            res2 = await client.upload_face(emp.external_id, snapshot)
+            res2 = await client.upload_face(emp.external_id, snapshot, full_name)
             if res2.success:
                 res2.detail = f"OK · снимок с камеры залит как фото лица ({len(snapshot)//1024} КБ)"
                 res = res2
+            else:
+                res = res2  # покажем ошибку upload, а не notSupport от capture
 
     if res.success:
         _save_credential(db, emp.id, device.id, "face", res.value_ref)
@@ -353,8 +356,9 @@ async def enroll_face(
     image_bytes = await file.read()
     if len(image_bytes) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Файл слишком большой (>5MB)")
+    full_name = " ".join(filter(None, [emp.last_name, emp.first_name, emp.middle_name]))
     client = HikvisionService.client_for(device)
-    res = await client.upload_face(emp.external_id, image_bytes)
+    res = await client.upload_face(emp.external_id, image_bytes, full_name)
     if res.success:
         _save_credential(db, emp.id, device.id, "face", res.value_ref)
     audit.log(
