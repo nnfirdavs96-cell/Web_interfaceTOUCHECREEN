@@ -39,6 +39,18 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     def _startup() -> None:
         Base.metadata.create_all(bind=engine)
+        # Минимальная "миграция" — добавляем новые колонки если их ещё нет.
+        # (полноценный Alembic подключим, когда модель станет стабильной)
+        from sqlalchemy import text
+
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "ALTER TABLE devices ADD COLUMN IF NOT EXISTS "
+                    "timezone_offset INTEGER NOT NULL DEFAULT 5"
+                )
+            )
+
         from app.db.seed import run as seed_run
 
         seed_run()

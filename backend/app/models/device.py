@@ -24,4 +24,5 @@ class Device(UUIDPKMixin, TimestampMixin, Base):
     online: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     purpose: Mapped[str] = mapped_column(String(32), default="entry", nullable=False)
+    timezone_offset: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
     comment: Mapped[str | None] = mapped_column(String(512), nullable=True)

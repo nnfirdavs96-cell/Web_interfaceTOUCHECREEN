@@ -98,7 +98,7 @@ async def test_connection(
             device.firmware = info.firmware
         # Параллельно синхронизируем время устройства с временем сервера
         try:
-            await client.set_time()
+            await client.set_time(device.timezone_offset)
         except Exception:
             pass
     db.commit()
@@ -119,7 +119,7 @@ async def sync_time(
     """Принудительная синхронизация времени устройства с временем сервера."""
     device = crud.get_or_404(db, Device, device_id)
     client = HikvisionService.client_for(device)
-    ok = await client.set_time()
+    ok = await client.set_time(device.timezone_offset)
     return {"success": ok, "detail": "Время синхронизировано" if ok else "Не удалось задать время"}
 
 

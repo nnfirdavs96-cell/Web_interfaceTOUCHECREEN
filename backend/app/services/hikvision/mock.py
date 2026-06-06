@@ -98,6 +98,6 @@ class MockClient:
             value_ref="****1234",
         )
 
-    async def set_time(self) -> bool:
+    async def set_time(self, offset_hours: int = 5) -> bool:
         await asyncio.sleep(0.05)
         return True

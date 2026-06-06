@@ -660,19 +660,22 @@ class IsapiClient:
         except Exception as e:
             return EnrollResult(success=False, detail=str(e)[:200])
 
-    async def set_time(self) -> bool:
+    async def set_time(self, offset_hours: int = 5) -> bool:
         """Синхронизирует время устройства с сервером.
 
         Формат проверен эмпирически: simple XML PUT без xmlns/version,
         с timeZone в Hikvision-формате CST±H:MM:SS (где CST-5 = UTC+5).
-        Локальное время вычисляется под этот часовой пояс.
+        Локальное время вычисляется под выбранный часовой пояс.
         """
-        # TODO: вынести в Device.timezone когда понадобится поддержка разных регионов
-        tz = "CST-5:00:00"          # Ташкент / UTC+5
-        offset_hours = 5
+        # Hikvision инвертирует знак: CST-5 означает UTC+5
+        tz_sign = "-" if offset_hours >= 0 else "+"
+        tz = f"CST{tz_sign}{abs(offset_hours)}:00:00"
 
         local = datetime.now(timezone.utc) + timedelta(hours=offset_hours)
-        local_str = local.strftime("%Y-%m-%dT%H:%M:%S+05:00")
+        tz_suffix_sign = "+" if offset_hours >= 0 else "-"
+        local_str = local.strftime(
+            f"%Y-%m-%dT%H:%M:%S{tz_suffix_sign}{abs(offset_hours):02d}:00"
+        )
 
         xml_body = (
             f'<?xml version="1.0" encoding="UTF-8"?>'

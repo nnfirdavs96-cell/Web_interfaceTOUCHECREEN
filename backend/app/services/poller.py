@@ -88,7 +88,8 @@ async def sync_time_once() -> int:
     for device in devices:
         try:
             client = HikvisionService.client_for(device)
-            if await client.set_time():
+            tz_offset = getattr(device, "timezone_offset", 5)
+            if await client.set_time(tz_offset):
                 done += 1
         except Exception as e:
             log.debug("set_time %s failed: %s", device.id, e)
