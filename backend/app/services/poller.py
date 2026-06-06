@@ -18,6 +18,7 @@ from app.services.ws import manager
 log = logging.getLogger("poller")
 
 POLL_INTERVAL_SECONDS = 30
+TIME_SYNC_INTERVAL_SECONDS = 3600  # каждые час подстраиваем время устройств
 
 
 async def poll_once() -> int:
@@ -79,12 +80,35 @@ async def poll_once() -> int:
     return saved
 
 
+async def sync_time_once() -> int:
+    """Подстраивает время всех онлайн-устройств. Возвращает число успешно обновлённых."""
+    done = 0
+    with SessionLocal() as db:
+        devices = list(db.scalars(select(Device).where(Device.online.is_(True))).all())
+    for device in devices:
+        try:
+            client = HikvisionService.client_for(device)
+            if await client.set_time():
+                done += 1
+        except Exception as e:
+            log.debug("set_time %s failed: %s", device.id, e)
+    return done
+
+
 async def loop() -> None:
+    last_time_sync = 0.0
     while True:
         try:
             n = await poll_once()
             if n:
                 log.info("polled %d new events", n)
+
+            now = asyncio.get_event_loop().time()
+            if now - last_time_sync >= TIME_SYNC_INTERVAL_SECONDS:
+                synced = await sync_time_once()
+                if synced:
+                    log.info("synced time on %d devices", synced)
+                last_time_sync = now
         except Exception:
             log.exception("poll loop iteration failed")
         await asyncio.sleep(POLL_INTERVAL_SECONDS)

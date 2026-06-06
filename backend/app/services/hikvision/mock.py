@@ -97,3 +97,7 @@ class MockClient:
             detail=f"mock: card captured for {external_id}",
             value_ref="****1234",
         )
+
+    async def set_time(self) -> bool:
+        await asyncio.sleep(0.05)
+        return True

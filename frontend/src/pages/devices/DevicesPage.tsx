@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Cpu, Pencil, Plus, RefreshCw, Trash2, Wifi, WifiOff } from "lucide-react";
+import { Clock, Cpu, Pencil, Plus, RefreshCw, Trash2, Wifi, WifiOff } from "lucide-react";
 import { useMemo, useState } from "react";
 import { branchesApi } from "@/api/branches";
 import { devicesApi } from "@/api/devices";
@@ -82,6 +82,12 @@ export default function DevicesPage() {
     mutationFn: (id: string) => devicesApi.sync(id),
     onSuccess: (_, id) =>
       setTestResult((p) => ({ ...p, [id]: "Задача синхронизации поставлена в очередь" })),
+  });
+
+  const timeSyncMut = useMutation({
+    mutationFn: (id: string) => devicesApi.syncTime(id),
+    onSuccess: (res, id) =>
+      setTestResult((p) => ({ ...p, [id]: res.detail })),
   });
 
   function openCreate() {
@@ -195,6 +201,15 @@ export default function DevicesPage() {
                 disabled={syncMut.isPending}
               >
                 <RefreshCw className="h-3.5 w-3.5" /> Синк
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => timeSyncMut.mutate(d.id)}
+                disabled={timeSyncMut.isPending}
+                title="Синхронизировать время устройства с временем сервера"
+              >
+                <Clock className="h-3.5 w-3.5" /> Время
               </Button>
               <Button size="sm" variant="ghost" onClick={() => openEdit(d)}>
                 <Pencil className="h-3.5 w-3.5" />
