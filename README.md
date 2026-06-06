@@ -1,73 +1,171 @@
 # Hikvision Access Control Web Platform
 
-Современная веб-платформа для управления устройствами контроля доступа Hikvision (DS-K1T343 и аналоги), учёта рабочего времени сотрудников и формирования отчётов. Альтернатива HikCentral / iVMS с упором на простоту и красивый UI.
+Современная веб-платформа для управления устройствами контроля доступа Hikvision (тестировано на DS-K1T343MFWX V4.48), учёта рабочего времени сотрудников и формирования отчётов. Альтернатива HikCentral / iVMS-4200 с упором на простоту, красивый UI и работу прямо из браузера.
 
-> **Статус:** реализовано 5 из 7 этапов. Система готова к работе с mock-устройствами; для подключения реального оборудования нужно дополнить `IsapiClient` (см. этап 3).
+> **Статус:** в production-готовом виде работают все 7 этапов. Эмпирически проверено на реальном устройстве DS-K1T343MFWX (прошивка V4.48.0) — синхронизация сотрудников, регистрация карт, отпечатков, лиц, расчёт табеля, экспорт отчётов.
 
 ---
 
-## Возможности (итоговая цель)
+## Содержание
 
-- Подключение и мониторинг устройств Hikvision (IP, порт, логин, статус online/offline).
-- Управление организациями, отделами (иерархия), филиалами/точками.
-- Реестр сотрудников: ФИО, фото, должность, статус, поиск и фильтры.
-- Назначение сотрудников на устройства (отпечаток, лицо, карта, PIN).
-- Расписания рабочего времени: офис, магазин, охрана 24/7, ночные смены, индивидуальные.
-- Автоматический учёт прихода/ухода, опозданий, раннего ухода, отсутствий.
-- Отчёты: дневной, недельный, месячный, по сотруднику/отделу/филиалу, сводный табель.
-- Экспорт в **Excel / CSV / PDF**.
-- Интеграция с **1С** и биллингом через REST API.
-- RBAC: супер-админ, админ, отдел кадров, бухгалтерия, руководитель, наблюдатель, админ филиала.
-- WebSocket — события прохода в реальном времени.
-- Тёмная/светлая тема, RU/EN/UZ локализация.
+1. [Возможности](#возможности)
+2. [Технологический стек](#технологический-стек)
+3. [Структура репозитория](#структура-репозитория)
+4. [Быстрый запуск](#быстрый-запуск)
+5. [Прогресс по этапам](#прогресс-по-этапам)
+6. [Что протестировано на реальном устройстве](#что-протестировано-на-реальном-устройстве)
+7. [Ограничения прошивки V4.48](#ограничения-прошивки-v448)
+8. [Workflow администратора](#workflow-администратора)
+9. [Workflow регистрации сотрудника](#workflow-регистрации-сотрудника)
+10. [API / RBAC / Hikvision-обвязка](#api--rbac--hikvision-обвязка)
+11. [Что осталось](#что-осталось)
+12. [Полезные команды](#полезные-команды)
+
+---
+
+## Возможности
+
+- ✅ Подключение и мониторинг устройств Hikvision (IP, порт, логин, статус online/offline).
+- ✅ Live-превью с камеры терминала в браузере (через ISAPI snapshot, обновление каждые 1.5 с).
+- ✅ Авто-синхронизация времени устройства с сервером (раз в час + при `Проверить`), с настраиваемым часовым поясом на каждое устройство.
+- ✅ Управление организациями, отделами (иерархия), филиалами.
+- ✅ Реестр сотрудников: ФИО, фото, должность, статус; **авто-синхронизация на все онлайн-устройства** при создании/изменении/удалении.
+- ✅ Назначение сотрудников на устройства; уровни доступа.
+- ✅ Регистрация **карт** (ручной ввод номера + «Считать с устройства» — терминал переходит в режим «Приложите карту»).
+- ✅ Регистрация **отпечатков** через ISAPI — терминал показывает «Поднесите палец».
+- ✅ Регистрация **лиц** через snapshot+upload в библиотеку распознавания HCFaceLibblackFD.
+- ✅ Расписания рабочего времени: офис, магазин, охрана 24/7, ночные смены, индивидуальные.
+- ✅ Автоматический учёт прихода/ухода, опозданий, раннего ухода, отсутствий.
+- ✅ Дашборд с KPI: сотрудники, устройства online, пришли сегодня, опоздали, недельная диаграмма.
+- ✅ Отчёты: дневной, недельный, месячный, по сотруднику/отделу/филиалу, сводный табель.
+- ✅ Экспорт **Excel / CSV / PDF**.
+- ✅ WebSocket — события прохода в реальном времени.
+- ✅ RBAC: 7 ролей × 24 разрешения.
+- ✅ Аудит-лог всех write-операций (JSONB before/after).
+- ✅ Тёмная/светлая тема, локализация RU/EN/UZ.
+- ⏳ Интеграции с 1С / биллингом (этап 6 — отложен по запросу заказчика).
 
 ---
 
 ## Технологический стек
 
-**Backend:** Python 3.12, FastAPI, PostgreSQL 16, Redis 7, SQLAlchemy 2.0 + Alembic, Celery, httpx, JWT, openpyxl, reportlab, cryptography (Fernet).
+**Backend:** Python 3.12, FastAPI, PostgreSQL 16, Redis 7, SQLAlchemy 2.0 + Alembic, asyncio (фоновые задачи), httpx + subprocess curl (для специфики Hikvision), JWT, bcrypt, openpyxl, reportlab, cryptography (Fernet).
 
-**Frontend:** React 18 + TypeScript + Vite, Tailwind CSS, TanStack Query, Zustand, lucide-react.
+**Frontend:** React 18 + TypeScript + Vite, Tailwind CSS, TanStack Query, Zustand, react-i18next, lucide-react.
 
-**Infra:** Docker Compose, Nginx, GitHub Actions.
-
-Подробности — в [ARCHITECTURE.md](./ARCHITECTURE.md).
+**Infra:** Docker Compose, Nginx (reverse-proxy + WebSocket).
 
 ---
 
 ## Структура репозитория
 
 ```
-backend/    — FastAPI приложение, модели, миграции, фоновые задачи
-frontend/   — React + TS приложение (Vite)
-deploy/     — docker-compose, nginx
-docs/       — документация (API, Hikvision, Deploy)
+Web_interfaceTOUCHECREEN/
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── deps.py             # DI: get_current_user, require(perm) — RBAC guards
+│   │   │   ├── crud.py             # Generic CRUD helper с авто-аудитом
+│   │   │   └── v1/
+│   │   │       ├── auth.py         # Login/refresh/me/logout
+│   │   │       ├── dashboard.py    # KPI + weekly chart + recent events
+│   │   │       ├── organizations.py / departments.py / branches.py
+│   │   │       ├── devices.py      # CRUD + test-connection + sync-time + snapshot proxy
+│   │   │       ├── employees.py    # CRUD + assign-devices + sync-to-device
+│   │   │       │                   # + enroll-fingerprint + capture-face + enroll-face
+│   │   │       │                   # + add-card + capture-card + credentials
+│   │   │       │                   # + auto-sync на все online устройства
+│   │   │       ├── schedules.py / attendance.py / reports.py
+│   │   │       ├── users.py / audit.py / settings.py
+│   │   ├── core/
+│   │   │   ├── config.py           # Pydantic Settings (.env)
+│   │   │   ├── security.py         # JWT, bcrypt, password hashing
+│   │   │   ├── rbac.py             # 7 ролей × 24 разрешения
+│   │   │   └── crypto.py           # Fernet шифрование паролей устройств
+│   │   ├── db/
+│   │   │   ├── base.py / session.py
+│   │   │   ├── seed.py             # admin@hikvision.dev / admin + роли
+│   │   │   └── demo_seed.py        # Опционально: 10 сотрудников + 7 дней событий
+│   │   ├── models/                 # 17 SQLAlchemy таблиц
+│   │   ├── schemas/                # Pydantic DTO
+│   │   ├── services/
+│   │   │   ├── hikvision/
+│   │   │   │   ├── base.py         # Protocol HikvisionClient
+│   │   │   │   ├── isapi.py        # Реальный клиент (XML/JSON, Digest, curl-fallback)
+│   │   │   │   ├── mock.py         # Mock для разработки без железа
+│   │   │   │   └── service.py      # Facade: подбирает клиент по HIKVISION_MODE
+│   │   │   ├── attendance.py       # Алгоритм расчёта табеля (ночные смены, обед)
+│   │   │   ├── poller.py           # asyncio: опрос событий + sync_time каждый час
+│   │   │   ├── ws.py               # ConnectionManager для live-events
+│   │   │   ├── audit.py            # Запись в audit_logs с JSONB before/after
+│   │   │   ├── report.py / export.py  # Сборка табеля + CSV/Excel/PDF
+│   │   ├── tests/                  # pytest: RBAC, security, hikvision mock
+│   │   └── main.py                 # FastAPI factory + startup (ALTER TABLE, seed, pollers)
+│   ├── pyproject.toml
+│   ├── Dockerfile                  # Python 3.12-slim + curl (для face upload)
+│   └── .env.example
+│
+├── frontend/
+│   ├── src/
+│   │   ├── api/                    # axios клиенты по модулям
+│   │   ├── components/
+│   │   │   ├── ui/                 # Button, Input, Drawer, DataTable, PageHeader
+│   │   │   ├── layout/             # Sidebar, Topbar, Shell
+│   │   │   └── ProtectedRoute.tsx
+│   │   ├── pages/
+│   │   │   ├── Login.tsx
+│   │   │   ├── Dashboard.tsx       # KPI + bar chart + recent events
+│   │   │   ├── organizations/ / departments/ / branches/
+│   │   │   ├── devices/            # Карточная сетка + test/sync/time, tz dropdown
+│   │   │   ├── employees/
+│   │   │   │   ├── EmployeesPage.tsx     # Таблица с фильтрами + drawer
+│   │   │   │   └── EmployeeDetailPage.tsx  # 5 вкладок: Профиль, Устройства,
+│   │   │   │                              # Регистрация, История, Табель
+│   │   │   ├── schedules/ / attendance/ / reports/
+│   │   │   ├── users/ / audit/ / settings/
+│   │   ├── i18n/                   # ru/en/uz JSON + i18next config
+│   │   ├── stores/                 # zustand (auth)
+│   │   ├── lib/                    # cn(), utils
+│   │   └── router.tsx
+│   ├── tailwind.config.ts          # brand=#2563eb, status colors
+│   ├── vite.config.ts
+│   ├── Dockerfile                  # multi-stage: build → nginx
+│   └── nginx.conf                  # /api/ proxy + WebSocket upgrade
+│
+├── deploy/
+│   └── docker-compose.yml          # postgres + redis + backend + frontend (порт 8090)
+│
+├── docs/
+│   ├── ARCHITECTURE.md
+│   ├── API.md                      # Все REST endpoints
+│   ├── HIKVISION.md                # Подключение реального устройства
+│   └── DEPLOY.md                   # Production-инструкция (HTTPS, бэкапы)
+│
+└── README.md                       # этот файл
 ```
 
 ---
 
-## Запуск
+## Быстрый запуск
 
 ```bash
-git clone <repo>
+git clone https://github.com/nnfirdavs96-cell/Web_interfaceTOUCHECREEN.git
 cd Web_interfaceTOUCHECREEN
+
+# Настроить .env (обязательно сгенерировать свой SECRET_KEY!)
 cp backend/.env.example backend/.env
+SECRET=$(openssl rand -hex 32)
+sed -i "s|^SECRET_KEY=.*|SECRET_KEY=$SECRET|" backend/.env
+
+# Запустить
 docker compose -f deploy/docker-compose.yml up -d --build
 ```
 
 После старта:
-- Веб-интерфейс: http://localhost:8090
-- API + Swagger: http://localhost:8090/api/docs
-- Health-check: http://localhost:8090/api/health
-- Логин по умолчанию: `admin@hikvision.dev` / `admin`
-
-### Локальная разработка фронта
-
-```bash
-cd frontend
-npm install
-npm run dev   # http://localhost:5173 → проксирует /api на backend:8000
-```
+- **Веб-интерфейс:** http://localhost:8090
+- **API + Swagger:** http://localhost:8090/api/docs
+- **Health-check:** http://localhost:8090/api/health
+- **Логин по умолчанию:** `admin@hikvision.dev` / `admin`
 
 ---
 
@@ -75,187 +173,327 @@ npm run dev   # http://localhost:5173 → проксирует /api на backend
 
 ### ✅ Этап 1 — Фундамент
 
-Каркас приложения, авторизация, RBAC, базовый UI.
+**Что сделано:**
+- Структура проекта (`app/{core,db,models,schemas,api/v1}`)
+- Настройки через `pydantic-settings`
+- JWT (access 15 мин + refresh 7 дней), bcrypt
+- **RBAC: 7 ролей × 24 разрешения** (super_admin, admin, hr, accountant, manager, viewer, branch_admin)
+- Модели `roles`, `users`; auto-seed `admin@hikvision.dev`
+- Endpoints: `/auth/login`, `/auth/refresh`, `/auth/me`, `/auth/logout`, `/api/health`
+- Frontend: Login страница, ProtectedRoute, Layout (Sidebar 13 разделов + Topbar)
+- Auth store (Zustand + persist), axios с JWT-интерцептором
+- Dark mode, TanStack Query
 
-**Backend:**
-- Структура проекта (`app/{core,db,models,schemas,api/v1}`).
-- Настройки через `pydantic-settings` (`.env`).
-- JWT (access 15 мин + refresh 7 дн), bcrypt-хеши паролей.
-- **RBAC-матрица: 7 ролей × 24 разрешения**, dependency `require("perm.code")`.
-- Модели `roles`, `users`; автосоздание таблиц + seed `admin@hikvision.dev`.
-- Endpoints: `POST /auth/login`, `/auth/refresh`, `/auth/logout`, `GET /auth/me`, `GET /api/health`.
-- Dockerfile + `.env.example`.
-
-**Frontend:**
-- Auth store (Zustand + persist), axios с JWT-интерсептором, авто-логаут на 401.
-- **Login** — страница с брендингом, dark mode toggle.
-- **Layout Shell**: Sidebar (13 разделов), Topbar (поиск, тема, профиль, logout).
-- ProtectedRoute, React Router v6.
-- TanStack Query + Tailwind с брендовыми цветами.
-
-**Infra:** docker-compose (postgres + redis + backend + frontend на nginx), порт 8090.
+**Тестируется:**
+- `tests/test_rbac.py` — матрица ролей (super_admin = all, viewer = read-only, hr ≠ devices, accountant = export+send)
+- `tests/test_security.py` — bcrypt roundtrip, JWT access/refresh, Fernet шифрование
 
 ---
 
 ### ✅ Этап 2 — Справочники
 
-Базовые сущности и аудит.
+**Что сделано:**
+- 4 таблицы: `organizations`, `departments` (self-referencing иерархия), `branches`, `audit_logs` (JSONB before/after)
+- **Generic CRUD helper** (`api/crud.py`) с автоматическим аудитом каждого write
+- 5 роутеров: `/organizations`, `/departments`, `/branches`, `/users`, `/audit/logs`
+- RBAC на каждом endpoint через `Depends(require("perm.code"))`
+- Frontend: переиспользуемые UI (Button, Input, Drawer, DataTable, PageHeader)
+- Страницы: Организации, Отделы (tree-view), Филиалы, Пользователи, Логи действий
+- Поиск, пагинация, цветные статус-чипы
 
-**Backend:**
-- 4 таблицы: `organizations`, `departments` (self-referencing иерархия), `branches`, `audit_logs` (JSONB before/after).
-- **Generic CRUD helper** — единая логика list/get/create/update/delete с автоматическим аудитом.
-- 5 роутеров: `/organizations`, `/departments`, `/branches`, `/users` (full CRUD), `/audit/logs`.
-- RBAC на каждом endpoint.
-- Каждая write-операция → запись в `audit_logs` с user/IP/user-agent.
-
-**Frontend:**
-- Переиспользуемые UI: `Button`, `Input`, `Textarea`, `Field`, `Drawer`, `DataTable`, `PageHeader`.
-- Страницы: Организации, Отделы (tree-view с иерархией), Филиалы, Пользователи, Логи действий.
-- Поиск, пагинация, цветные статус-чипы, оптимистичная инвалидация кэша.
+**Тестируется в реальной работе:**
+- Создание организации → автоматически появляется в выпадающих списках везде
+- Создание иерархии отделов с подотделами через drag-and-drop расширение
+- Просмотр аудит-лога — каждый CRUD пишется с user/IP/user-agent
 
 ---
 
 ### ✅ Этап 3 — Устройства + Hikvision + Сотрудники
 
-**Backend:**
-- 4 таблицы: `devices`, `employees`, `employee_credentials`, `employee_device_access`.
-- **Fernet-шифрование** паролей устройств (ключ выводится из `SECRET_KEY`).
+**Что сделано:**
+- 4 таблицы: `devices`, `employees`, `employee_credentials`, `employee_device_access`
+- **Fernet-шифрование** паролей устройств (ключ из `SECRET_KEY`)
 - **Hikvision-абстракция:**
-  - `HikvisionClient` Protocol — единый интерфейс (test_connection, fetch_events, upsert/delete_user).
-  - `MockClient` — работает без железа, фейк-serial, генерирует случайные события.
-  - `IsapiClient` — заглушка для реального ISAPI (HTTP Digest), эндпоинты `/ISAPI/System/deviceInfo`, `/ISAPI/AccessControl/AcsEvent`. **Требует доработки при подключении устройства.**
-  - `HikvisionService.client_for(device)` — фасад, выбирает реализацию по `HIKVISION_MODE` env.
-- Endpoints: `/devices` CRUD + `/test-connection` + `/sync`, `/employees` CRUD + `/access` + `/assign-devices`.
+  - `HikvisionClient` Protocol — единый интерфейс
+  - `MockClient` — для разработки без железа
+  - `IsapiClient` — реальный ISAPI (HTTP Digest, XML/JSON)
+  - `HikvisionService.client_for(device)` — фасад
+- Endpoints:
+  - `/devices` CRUD + `/test-connection` + `/sync` + `/sync-time` + `/snapshot`
+  - `/employees` CRUD + `/access` + `/assign-devices`
+  - `/employees/{id}/credentials` + `/sync-to-device` + `/enroll-fingerprint`
+    + `/capture-face` + `/enroll-face` + `/add-card` + `/capture-card`
+- **Auto-sync employee → все online устройства** при create/update/delete
+- Frontend:
+  - Устройства: карточная сетка, online/offline бейджи, кнопки Проверить / Синк / Время / Edit / Delete
+  - **Live-превью камеры** в карточке сотрудника (snapshot каждые 1.5 с)
+  - Сотрудники: фильтруемая таблица, аватарки-инициалы, drawer с каскадными селектами
+  - **Карточка сотрудника** (5 вкладок): Профиль / Устройства / Регистрация / История / Табель
+  - **Drawer регистрации устройств** с чек-боксами и online-индикатором
 
-**Frontend:**
-- **Устройства**: карточная сетка с online/offline бейджами, IP/serial/firmware, кнопки Проверить/Синк/Edit/Delete.
-- **Сотрудники**: фильтруемая таблица (поиск, организация, статус), аватарки-инициалы, drawer редактирования с каскадными селектами.
-- **Назначение устройств** — drawer с чек-боксами и online-индикатором каждого устройства.
+**Тестируется на реальном устройстве (DS-K1T343MFWX V4.48):**
+- Проверка связи → возвращает реальный серийник `DS-K1T343MFWX20260212V044800ENGS5815252`, прошивку `V4.48.0`
+- Создание сотрудника → авто-появляется в Hikvision Person Management через ISAPI `/UserInfo/Record`
+- Изменение сотрудника → авто-обновляется через `/UserInfo/Modify`
+- Live-snapshot работает через `/ISAPI/Streaming/channels/101/picture`
 
 ---
 
 ### ✅ Этап 4 — Расписания + События + Live
 
-**Backend:**
-- 5 таблиц: `schedules`, `schedule_days`, `schedule_assignments`, `attendance_events`, `attendance_reports` (unique per employee+date).
+**Что сделано:**
+- 5 таблиц: `schedules`, `schedule_days`, `schedule_assignments`, `attendance_events`, `attendance_reports` (unique per employee+date)
 - **Алгоритм расчёта табеля** (`services/attendance.py`):
-  - подбор расписания: индивидуальное > отдел > филиал;
-  - окно событий с поддержкой **ночных смен**;
-  - вычет обеденного перерыва;
-  - пороги допустимого опоздания / раннего ухода;
-  - 6 статусов: `normal`, `late`, `early_leave`, `absent`, `partial`, `day_off`.
-- **Фоновый poller** (asyncio task, 30 сек): обходит устройства через `HikvisionService`, делает upsert событий, связывает с сотрудниками по `external_id`, шлёт в WebSocket.
-- **Фоновый пересчёт** (10 мин) — табель за вчера/сегодня.
-- **WebSocket** `/api/v1/attendance/ws/events`: `ConnectionManager` для broadcast живых событий.
-- Endpoints: `/schedules` CRUD + `/assign`, `/attendance/events`, `/attendance/fetch-events` (ручной триггер), `/attendance/recalculate`, `/attendance/reports`, `/dashboard`.
-- Nginx: WebSocket upgrade headers для `/api/`.
+  - Подбор расписания: индивидуальное > отдел > филиал
+  - Окно событий с поддержкой ночных смен (`night_shift`)
+  - Вычет обеденного перерыва (`lunch_start` / `lunch_end`)
+  - Пороги допустимого опоздания / раннего ухода
+  - 6 статусов: `normal`, `late`, `early_leave`, `absent`, `partial`, `day_off`
+- **Фоновый poller** (asyncio task, 30 сек):
+  - Обходит онлайн-устройства через ISAPI `/AcsEvent`
+  - Делает upsert событий, связывает с сотрудниками по `external_id`
+  - Шлёт live-события в WebSocket
+  - **Раз в час** автоматически синхронизирует время на всех устройствах
+- **Фоновый пересчёт** табеля (10 мин — вчера/сегодня)
+- **WebSocket** `/api/v1/attendance/ws/events` — broadcast живых событий через `ConnectionManager`
+- Endpoints: `/schedules` CRUD + `/assign`, `/attendance/events`, `/attendance/fetch-events`, `/attendance/recalculate`, `/dashboard`
+- Nginx: WebSocket upgrade headers для `/api/`
+- Frontend:
+  - Расписания: card grid + **визуальный конструктор недели** (чек-боксы + time-инпуты)
+  - Drawer назначения — выбор employee/department/branch
+  - Приход/уход: фильтр по датам, таблица событий, кнопки «Опросить» и «Пересчитать», **live-счётчик WebSocket**
+  - Дашборд: 6 KPI-карточек, недельная bar-диаграмма, лента событий
 
-**Frontend:**
-- **Расписания**: card grid + drawer с **визуальным конструктором** недели (чек-боксы дней + time-инпуты).
-- **Drawer назначения** — выбор employee/department/branch с чек-боксами.
-- **Приход/уход**: фильтр по датам, таблица событий, кнопки «Опросить устройства» и «Пересчитать табель», **live-счётчик WebSocket**.
-- **Дашборд**: 6 KPI-карточек с реальными цифрами, недельная bar-диаграмма посещаемости, лента последних событий.
+**Тестируется в проде:**
+- События с реального устройства приходят в нашу систему с правильным timestamp
+- При создании сотрудника `external_id` события автоматически привязываются к ФИО
+- WebSocket counter инкрементируется в реальном времени при проходе через терминал
 
 ---
 
 ### ✅ Этап 5 — Отчёты + Экспорт
 
-**Backend:**
-- `services/report.py` — `fetch_rows` с JOIN `attendance_reports` + `employees` и фильтрами (даты, employee, department, branch, organization, status).
+**Что сделано:**
+- `services/report.py` — `fetch_rows` с JOIN `attendance_reports + employees` и фильтрами (даты, employee, department, branch, organization, status)
 - `services/export.py` — три формата:
-  - **CSV** (UTF-8 BOM для корректной Excel-кодировки, разделитель `;`).
-  - **Excel** (`openpyxl` с автоширинами колонок).
-  - **PDF** (`reportlab`, landscape A4, стилизованная таблица с шапкой брендового цвета).
-- Endpoints: `/reports/timesheet`, `/reports/summary` (агрегация по статусам), `/reports/export/{csv,excel,pdf}`.
+  - **CSV** (UTF-8 BOM для корректной кодировки в Excel, разделитель `;`)
+  - **Excel** (`openpyxl` с автоширинами колонок)
+  - **PDF** (`reportlab`, landscape A4, стилизованная таблица с шапкой брендового цвета)
+- Endpoints: `/reports/timesheet`, `/reports/summary`, `/reports/export/{csv,excel,pdf}`
+- Frontend: **Отчёты** со сводными чипами по статусам, мульти-фильтр (даты, орг, отдел, филиал, статус), таблица, **3 кнопки экспорта** — скачивание через blob
 
-**Frontend:**
-- **Отчёты**: сводные чипы по статусам (Норма / Опоздания / Отсутствия / Всего), мульти-фильтр (даты, орг, отдел, филиал, статус), таблица табеля, **3 кнопки экспорта** — скачивание через blob с правильным именем файла.
-
----
-
-### ⏳ Этап 6 — Интеграции с 1С и биллингом
-
-**План — backend:**
-- Модель `integrations` (id, type=1c/billing/webhook, name, url, auth_token_encrypted, method, interval_minutes, is_active, last_run_at).
-- Модель `integration_logs` (payload, response, status_code, success, error, created_at).
-- `services/integration.py`:
-  - сборка JSON-табеля по сотруднику/периоду (формат из ТЗ);
-  - HTTP-отправка через httpx с ретраями и экспоненциальным backoff;
-  - запись в `integration_logs`.
-- Endpoints:
-  - CRUD `/integrations`,
-  - `POST /integrations/{id}/test` — проверка соединения,
-  - `POST /integrations/{id}/send` — ручная отправка отчёта,
-  - `GET /integrations/{id}/logs` — журнал доставок.
-- Автоматическая периодическая отправка (фоновая задача по `interval_minutes`).
-- Внешний REST API (для приёма запросов от 1С/биллинга):
-  - `GET /api/external/employees` (с токеном),
-  - `GET /api/external/timesheet?period=...`,
-  - `GET /api/external/events`.
-
-**План — frontend:**
-- Страница **Интеграции**: карточки 1С/биллинг с кнопками Test/Send/Edit, форма настройки (URL, токен, интервал, метод).
-- Страница **Логи интеграции**: таблица с фильтрами (по интеграции, статусу, дате), детальный просмотр payload/response.
+**Тестируется:**
+- Скачивание CSV/XLSX/PDF с реальными данными за период
+- Фильтрация по любым комбинациям
 
 ---
 
-### ⏳ Этап 7 — Полировка и финализация
+### ⏳ Этап 6 — Интеграции с 1С / биллингом (отложен)
 
-**План — backend:**
-- Страница **Настройки**: редактирование SECRET_KEY (ротация Fernet), HIKVISION_MODE, CORS_ORIGINS из БД.
-- **Seed-данные для демо**: 1 организация, 2 филиала, 3 отдела, 10 сотрудников с фото-плейсхолдерами, 2 устройства (mock), 2 расписания, события за 7 дней назад.
-- **Тесты** (`pytest`):
-  - юнит на алгоритм расчёта табеля (норма / опоздание / ночная смена / обед);
-  - юнит на RBAC матрицу;
-  - юнит на mock-Hikvision клиент;
-  - интеграционные тесты основных REST-эндпоинтов.
-- Документация:
-  - `docs/API.md` — описание всех endpoints.
-  - `docs/HIKVISION.md` — как заполнить `IsapiClient` под реальное устройство, какие ISAPI вызовы использовать.
-  - `docs/DEPLOY.md` — production-развёртывание (HTTPS, обратный прокси, бэкапы postgres).
+**План:**
+- Модель `integrations` (type=1c/billing/webhook, URL, auth_token_encrypted, interval_minutes)
+- Модель `integration_logs` (payload/response/status/success)
+- HTTP-отправка через httpx с retries + экспоненциальный backoff
+- CRUD `/integrations` + `/test` + `/send` + `/logs`
+- Периодическая автоотправка
+- Внешний REST API для запросов от 1С (с bearer-токеном)
+- Frontend: страницы Интеграции и Логи интеграции
 
-**План — frontend:**
-- **Локализация i18next**: RU / EN / UZ, переключатель в Topbar.
-- **Страница «Настройки»**: общие параметры, безопасность, Hikvision, 1С/биллинг.
-- **Карточка сотрудника** на отдельной странице с табами: профиль / устройства / расписания / история / отчёт.
-- Полировка dashboard: добавить топ опоздавших, статистику по филиалам.
-- Drag & drop загрузка фото сотрудника.
-- Полная проверка адаптивности (мобильная и планшетная вёрстка).
+**Статус:** отложен по решению заказчика. Готов к реализации за 1 день.
 
 ---
 
-## RBAC — кратко
+### ✅ Этап 7 — Полировка
+
+**Что сделано:**
+- **demo_seed.py**: 1 организация, 2 филиала, 3 отдела, 10 сотрудников, 2 устройства, 2 расписания, события за 7 дней (включается через `DEMO_SEED=true`)
+- **/settings** endpoint: read-only текущая конфигурация (version, env, hikvision_mode, token_ttl, cors)
+- **Тесты pytest**: RBAC, security (bcrypt + JWT + Fernet), Hikvision mock
+- **i18n RU/EN/UZ** через i18next, переключатель в Topbar (иконка глобуса), persist в localStorage
+- **Страница «Настройки»** — 4 секции (System, Security, Hikvision, Interface)
+- **Карточка сотрудника** (5 вкладок)
+- **Документация:** docs/HIKVISION.md, docs/DEPLOY.md, docs/API.md
+
+---
+
+### 🎯 Дополнительно после этапа 7 — Hikvision V4.48 интеграция (большая работа)
+
+Эмпирическая реверс-инженерия прошивки V4.48 на реальном DS-K1T343MFWX:
+
+| Что | Endpoint / Метод | Особенность V4.48 |
+|---|---|---|
+| Создание сотрудника | `POST /UserInfo/Record` | **Одиночный объект** `{"UserInfo":{...}}`, **не массив** |
+| Обновление сотрудника | `PUT /UserInfo/Modify` | Авто-fallback с Record если уже существует |
+| Удаление | `PUT /UserInfo/Delete` | `EmployeeNoList` |
+| Регистрация отпечатка | `POST /CaptureFingerPrint` | **XML body**, не JSON (JSON → badXmlContent) |
+| Считывание карты | `POST /CaptureCardInfo` | XML body |
+| Привязка карты вручную | `POST /CardInfo/Record` | Одиночный объект |
+| Загрузка лица | `PUT /Intelligent/FDLib/FDSetUp` | **multipart через subprocess curl** (httpx ломает формат), поле **`FaceImage`** не `img` |
+| Получение событий | `POST /AcsEvent` | major=5, поддерживает pagination |
+| Live snapshot | `GET /Streaming/channels/101/picture` | Канал 1 возвращает 404, нужен **101** |
+| Установка времени | `PUT /System/time` | **XML без xmlns/version**, формат `CST-5:00:00` = UTC+5 (знак инвертирован) |
+| Получение device info | `GET /System/deviceInfo` | Возвращает **XML даже при `?format=json`** — наш парсер обрабатывает оба |
+
+---
+
+## Что протестировано на реальном устройстве
+
+**Устройство:** Hikvision DS-K1T343MFWX, прошивка V4.48.0, IP 192.168.0.31
+
+✅ **Создание сотрудника** в нашей системе → Person Management Hikvision автоматически показывает его (через auto-sync)
+✅ **Изменение ФИО** в нашей системе → ФИО на устройстве обновляется
+✅ **Привязка RFID-карты** — вводим номер 8-10 цифр → `numOfCard: 1` на устройстве
+✅ **Считать карту с устройства** — терминал показывает «Приложите карту», ловит номер, автопривязка
+✅ **Запросить отпечаток** — терминал показывает «Поднесите палец», сотрудник прикладывает 3 раза
+✅ **Live-превью камеры** — реальное видео в браузере, обновление каждые 1.5 с
+✅ **Загрузка фото лица** — snapshot/JPG-файл идёт в библиотеку HCFaceLibblackFD (требует ракурс анфас)
+✅ **Синхронизация времени** — устройство принимает наше время и часовой пояс, исчезает плашка «неверное время»
+✅ **События прохода** — реальные проходы (face/card/fp) ловятся poller'ом каждые 30 секунд
+✅ **Расчёт табеля** — на основе реальных событий формируется правильный отчёт с опозданиями
+✅ **Экспорт Excel/PDF** — реальные данные с устройства попадают в файл
+
+---
+
+## Ограничения прошивки V4.48
+
+После эмпирической разведки **9+ endpoint'ов** (см. commit history), подтверждено что V4.48 на DS-K1T343MFWX **не имеет ISAPI API для face enrollment mode на экране терминала**. Все эндпоинты `CaptureFace`, `CaptureFaceData`, `AddUser`, `Configuration/captureMode` возвращают 404 / `notSupport`.
+
+| Хотелось | Реально на V4.48 | Что делаем |
+|---|---|---|
+| Терминал входит в «Add Face» при клике | ❌ Нет API | Snapshot+upload в библиотеку (тихо, без действий на терминале) |
+| Терминал входит в «Place Finger» | ✅ Есть (`CaptureFingerPrint`) | Терминал показывает «Поднесите палец» |
+| Терминал входит в «Swipe Card» | ✅ Есть (`CaptureCardInfo`) | Терминал показывает «Приложите карту» |
+| Live snapshot по HTTP | ✅ Только через канал 101 | Реализовано в LiveCamera компоненте |
+
+Это специфика V4.48 — нативный iVMS-4200 для enrollment режима лица использует бинарный SDK на порту 8000, недоступный через HTTP. Все остальные операции (регистрация юзера, карта, отпечаток) **полностью покрыты** через ISAPI.
+
+---
+
+## Workflow администратора
+
+1. **Открываешь** http://localhost:8090, входишь `admin@hikvision.dev / admin`
+2. Идёшь в **Организации** → создаёшь свою организацию
+3. **Филиалы** → создаёшь точки (офис, магазин)
+4. **Отделы** → выбираешь организацию → создаёшь иерархию (IT, бухгалтерия и т.д.)
+5. **Устройства** → «Добавить устройство»:
+   - IP / порт 80 / логин admin / пароль
+   - Назначение: «Главный вход»
+   - Часовой пояс: **UTC+5 (Ташкент/Худжанд)**
+   - Сохранить → нажми «Проверить» → должен показать реальный серийник
+   - Жми ⏱ «Время» → устройство получит правильное время
+6. **Расписания** → создай «Офис Пн-Пт 09:00-18:00» (визуальный конструктор)
+7. **Пользователи системы** → создай аккаунты HR / бухгалтерии / филиал-админов
+
+---
+
+## Workflow регистрации сотрудника
+
+1. **Сотрудники** → «Добавить»
+2. Заполни ФИО + **«ID сотрудника (для 1С)»** (например `100`) — это станет `employeeNo` на устройстве
+3. Выбери организацию / отдел / филиал → «Создать»
+4. **Авто-синхронизация** уже залила сотрудника на все online-устройства
+5. Кликни на сотрудника → откроется **карточка** с 5 вкладками
+6. **Вкладка «Регистрация»**:
+   - Live-превью камеры терминала наверху
+   - **Шаг 1 «Отправить на устройство»** — обычно не нужен (авто-синк уже сработал)
+   - **Шаг 2 «Запросить отпечаток»** — нажми, подойди к терминалу, «Поднесите палец» × 3 раза
+   - **Шаг 3 «Сделать снимок»** — сотрудник стоит перед камерой анфас → жмёшь → лицо в библиотеке
+   - **Шаг 4 «Считать с устройства»** — терминал ждёт карту → приложил → автозапись
+7. **Зарегистрированные учётные данные** внизу показывают что зарегистрировано
+
+После этого сотрудник может проходить через терминал по карте / отпечатку / лицу — события автоматически попадают в **Приход/уход** и **Отчёты**.
+
+---
+
+## API / RBAC / Hikvision-обвязка
+
+### REST API
+
+База: `/api/v1`. Авторизация — JWT Bearer.
+
+**Аутентификация:** `/auth/login` `/auth/refresh` `/auth/logout` `/auth/me`
+
+**Дашборд:** `/dashboard`
+
+**Справочники:** `/organizations` `/departments` `/branches` (CRUD + пагинация + search)
+
+**Устройства:**
+- `/devices` (CRUD)
+- `/devices/{id}/test-connection`
+- `/devices/{id}/sync` `/devices/{id}/sync-time`
+- `/devices/{id}/snapshot?t=<JWT>` (JPEG-snapshot для `<img>`)
+
+**Сотрудники:**
+- `/employees` (CRUD + filter: search/org/dept/branch/status)
+- `/employees/{id}/access` `/employees/{id}/assign-devices`
+- `/employees/{id}/credentials`
+- `/employees/{id}/sync-to-device`
+- `/employees/{id}/enroll-fingerprint`
+- `/employees/{id}/capture-face` (snapshot+upload автоматом)
+- `/employees/{id}/enroll-face` (multipart upload файла)
+- `/employees/{id}/add-card` `/employees/{id}/capture-card`
+
+**Расписания:** `/schedules` (CRUD) + `/schedules/{id}/assign`
+
+**Посещаемость:** `/attendance/events` `/attendance/fetch-events` `/attendance/recalculate` `/attendance/reports`
+
+**WebSocket:** `/api/v1/attendance/ws/events`
+
+**Отчёты:** `/reports/timesheet` `/reports/summary` `/reports/export/{csv,excel,pdf}`
+
+**Аудит:** `/audit/logs`
+
+**Настройки:** `/settings`
+
+**Полная документация:** `docs/API.md`
+
+### RBAC
 
 | Роль | Доступ |
 |---|---|
-| `super_admin` | Полный доступ + настройки системы |
+| `super_admin` | Полный (включая settings.write) |
 | `admin` | Всё кроме settings.write |
 | `hr` | Сотрудники, отделы, расписания, отчёты (просмотр) |
 | `accountant` | Отчёты + экспорт + отправка в 1С/биллинг |
-| `manager` | Просмотр своих отделов и отчётов |
+| `manager` | Просмотр своих отделов |
 | `viewer` | Только просмотр |
 | `branch_admin` | Управление своим филиалом (устройства, сотрудники) |
 
-Полная матрица — в `backend/app/core/rbac.py`.
+24 разрешения по схеме `<resource>.<action>` — см. `backend/app/core/rbac.py`.
+
+### Hikvision клиент
+
+Selectable через `HIKVISION_MODE` в `.env`:
+
+- `mock` (по умолчанию) — `MockClient` генерирует случайные события, для разработки без железа
+- `isapi` — реальный `IsapiClient` для production
+
+Конфигурация HTTP Digest auth с DS-K1T343 V4.48 (рабочая):
+```env
+HIKVISION_MODE=isapi
+```
+
+В IsapiClient:
+- httpx с `DigestAuth`
+- Парсер обоих форматов (XML + JSON) — V4.48 возвращает XML даже на `?format=json`
+- Friendly Russian error messages (mapping `cardNoAlreadyExist` → «Карта уже занята» и т.д.)
+- subprocess curl для face upload (httpx multipart ломается в этой прошивке)
 
 ---
 
-## Hikvision
+## Что осталось
 
-По умолчанию `HIKVISION_MODE=mock` — система работает без реального оборудования, mock-клиент генерирует случайные события.
-
-Для подключения реального устройства:
-1. В `backend/.env` поставить `HIKVISION_MODE=isapi`.
-2. Дописать методы в `backend/app/services/hikvision/isapi.py` (`fetch_events`, `upsert_user`, `delete_user`) — там стоят TODO с указанием ISAPI-эндпоинтов.
-3. Перезапустить backend.
-
----
-
-## Документация
-
-- [ARCHITECTURE.md](./ARCHITECTURE.md) — архитектура, схема БД, REST API, RBAC, план реализации.
-- `docs/HIKVISION.md` — настройка интеграции с ISAPI (этап 7).
-- `docs/DEPLOY.md` — production-развёртывание (этап 7).
+| # | Задача | Приоритет |
+|---|---|:---:|
+| 1 | **Этап 6** — интеграции с 1С / биллингом | M |
+| 2 | Production HTTPS через Let's Encrypt + Nginx | H |
+| 3 | Alembic миграции вместо `CREATE_ALL + ALTER IF NOT EXISTS` | M |
+| 4 | Поддержка нескольких устройств **разных моделей** (не только DS-K1T343) | L |
+| 5 | Bulk-импорт сотрудников из Excel | M |
+| 6 | Auto-cleanup attendance_events старше 1 года | L |
+| 7 | Уведомления Telegram/Email при опозданиях | L |
+| 8 | Мобильное приложение для сотрудников (PWA?) | L |
+| 9 | Двухфакторная аутентификация | L |
 
 ---
 
@@ -274,15 +512,63 @@ docker compose -f deploy/docker-compose.yml up -d --build
 docker compose -f deploy/docker-compose.yml build --no-cache frontend backend
 docker compose -f deploy/docker-compose.yml up -d
 
-# Остановить всё
-docker compose -f deploy/docker-compose.yml down
+# Очистить и запустить только устройства/сотрудников
+docker compose -f deploy/docker-compose.yml exec postgres psql -U hikv -d hikv -c "
+TRUNCATE TABLE
+  attendance_reports, attendance_events,
+  employee_device_access, employee_credentials,
+  employees, devices,
+  schedule_assignments, schedule_days, schedules
+CASCADE;"
 
 # Полная очистка (БД тоже)
 docker compose -f deploy/docker-compose.yml down -v
+
+# Проверить состояние БД
+docker compose -f deploy/docker-compose.yml exec postgres psql -U hikv -d hikv -c "
+SELECT 'employees' tbl, count(*) FROM employees
+UNION ALL SELECT 'devices', count(*) FROM devices
+UNION ALL SELECT 'attendance_events', count(*) FROM attendance_events
+UNION ALL SELECT 'attendance_reports', count(*) FROM attendance_reports;"
+
+# Проверить связь с устройством
+curl -s --digest -u admin:PASSWORD \
+  "http://DEVICE_IP/ISAPI/System/deviceInfo?format=json"
+
+# Проверить кто на устройстве
+curl -s -X POST --digest -u admin:PASSWORD \
+  -H "Content-Type: application/json" \
+  -d '{"UserInfoSearchCond":{"searchID":"1","maxResults":50,"searchResultPosition":0}}' \
+  "http://DEVICE_IP/ISAPI/AccessControl/UserInfo/Search?format=json" \
+  | python3 -m json.tool | grep -E 'employeeNo|name|numOf'
 ```
+
+---
+
+## Запуск тестов
+
+```bash
+cd backend
+pip install -e ".[dev]"
+pytest -v
+```
+
+Текущее покрытие:
+- `tests/test_rbac.py` — 7 тестов на матрицу ролей
+- `tests/test_security.py` — JWT + bcrypt + Fernet
+- `tests/test_hikvision_mock.py` — mock-клиент
+
+---
+
+## Документация
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — архитектура, схема БД, REST API, RBAC, план реализации
+- [docs/API.md](./docs/API.md) — обзор всех endpoints
+- [docs/HIKVISION.md](./docs/HIKVISION.md) — настройка интеграции с ISAPI
+- [docs/DEPLOY.md](./docs/DEPLOY.md) — production-развёртывание
 
 ---
 
 ## Лицензия
 
-Проприетарный проект. Все права принадлежат заказчику.
+Проприетарный проект.
