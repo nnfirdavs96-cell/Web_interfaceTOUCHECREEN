@@ -457,15 +457,23 @@ class IsapiClient:
                 f"{self.base}/ISAPI/Intelligent/FDLib/FDSetUp"
                 f"?format=json&FDID=1&faceLibType=blackFD"
             )
+            # Компактный JSON без пробелов — иначе curl -F может парсить криво
+            face_info_compact = json.dumps(face_info, separators=(",", ":"))
             args = [
                 curl_path, "-s", "-X", "POST", "--digest",
                 "-u", f"{self.conn.username}:{self.conn.password}",
-                "-F", f"FaceDataRecord={json.dumps(face_info)};type=application/json",
+                "-F", f"FaceDataRecord={face_info_compact};type=application/json",
                 "-F", f"img=@{tmp_path};type=image/jpeg",
                 "--connect-timeout", "10",
                 "--max-time", "30",
                 url,
             ]
+            log.info(
+                "curl upload_face FPID=%s image=%d bytes url=%s",
+                face_info.get("FPID"),
+                len(image_bytes),
+                url,
+            )
             proc = await asyncio.create_subprocess_exec(
                 *args,
                 stdout=asyncio.subprocess.PIPE,
@@ -473,17 +481,23 @@ class IsapiClient:
             )
             stdout, stderr = await proc.communicate()
             text = stdout.decode("utf-8", errors="replace")
+            err_text = stderr.decode("utf-8", errors="replace")
+            log.info(
+                "curl upload_face rc=%s stdout=%r stderr=%r",
+                proc.returncode,
+                text[:500],
+                err_text[:200],
+            )
             try:
                 data = json.loads(text) if text.strip().startswith("{") else self._parse_xml_text(text)
             except Exception:
                 data = {}
             ok, detail = self._success(data)
             if not ok:
-                err_detail = self._friendly_error(
-                    data,
-                    type("R", (), {"status_code": 200, "text": text[:500]})(),
-                    detail,
-                )
+                fake_r = type(
+                    "R", (), {"status_code": 200, "text": text[:500]}
+                )()
+                err_detail = self._friendly_error(data, fake_r, detail)
                 return EnrollResult(success=False, detail=err_detail)
             return EnrollResult(
                 success=True,
