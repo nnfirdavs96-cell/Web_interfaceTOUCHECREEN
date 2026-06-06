@@ -663,73 +663,44 @@ class IsapiClient:
     async def set_time(self) -> bool:
         """Синхронизирует время устройства с сервером.
 
-        Пробует XML и JSON; сохраняет существующий timeZone устройства,
-        меняет только localTime под этот же часовой пояс.
+        Формат проверен эмпирически: simple XML PUT без xmlns/version,
+        с timeZone в Hikvision-формате CST±H:MM:SS (где CST-5 = UTC+5).
+        Локальное время вычисляется под этот часовой пояс.
         """
+        # TODO: вынести в Device.timezone когда понадобится поддержка разных регионов
+        tz = "CST-5:00:00"          # Ташкент / UTC+5
+        offset_hours = 5
+
+        local = datetime.now(timezone.utc) + timedelta(hours=offset_hours)
+        local_str = local.strftime("%Y-%m-%dT%H:%M:%S+05:00")
+
+        xml_body = (
+            f'<?xml version="1.0" encoding="UTF-8"?>'
+            f"<Time>"
+            f"<timeMode>manual</timeMode>"
+            f"<localTime>{local_str}</localTime>"
+            f"<timeZone>{tz}</timeZone>"
+            f"</Time>"
+        )
+
         try:
             async with self._client() as c:
-                # 1. Читаем текущую конфигурацию времени, чтобы взять timeZone
-                rget = await c.get("/ISAPI/System/time?format=json", timeout=10.0)
-                cur = self._parse(rget)
-                tinfo = cur.get("Time") or {}
-                tz = tinfo.get("timeZone") or "CST-5:00:00"
-
-                # 2. Вычисляем локальное время в этом часовом поясе
-                offset_hours = self._tz_offset_hours(tz)
-                local = datetime.now(timezone.utc) + timedelta(hours=offset_hours)
-                local_str = local.strftime(f"%Y-%m-%dT%H:%M:%S{self._tz_suffix(offset_hours)}")
-
-                # 3. XML (наиболее совместимый для V4.48)
-                xml_body = (
-                    '<?xml version="1.0" encoding="UTF-8"?>'
-                    '<Time version="2.0" xmlns="http://www.isapi.org/ver20/XMLSchema">'
-                    "<timeMode>manual</timeMode>"
-                    f"<localTime>{local_str}</localTime>"
-                    f"<timeZone>{tz}</timeZone>"
-                    "</Time>"
-                )
                 r = await c.put(
                     "/ISAPI/System/time",
                     headers={"Content-Type": "application/xml"},
                     content=xml_body,
                     timeout=10.0,
                 )
-                ok, _ = self._success(self._parse(r))
+                data = self._parse(r)
+                ok, _ = self._success(data)
                 if ok:
-                    return True
-
-                # 4. JSON fallback
-                rj = await c.put(
-                    "/ISAPI/System/time?format=json",
-                    json={
-                        "Time": {
-                            "timeMode": "manual",
-                            "localTime": local_str,
-                            "timeZone": tz,
-                        }
-                    },
-                    timeout=10.0,
-                )
-                ok, _ = self._success(self._parse(rj))
+                    log.info("device time set to %s (%s)", local_str, tz)
+                else:
+                    log.warning("set_time non-OK response: %s", r.text[:300])
                 return ok
         except Exception as e:
-            log.warning("set_time failed: %s", e)
+            log.warning("set_time exception: %s", e)
             return False
-
-    @staticmethod
-    def _tz_offset_hours(tz: str) -> int:
-        """`CST-5:00:00` → +5, `CST+3:00:00` → -3 (Hikvision инвертирует знак)."""
-        m = re.search(r"CST([+-])(\d+)", tz or "")
-        if not m:
-            return 5  # дефолт UTC+5
-        sign, hours = m.group(1), int(m.group(2))
-        # В формате Hikvision CST-5 означает UTC+5
-        return hours if sign == "-" else -hours
-
-    @staticmethod
-    def _tz_suffix(offset_hours: int) -> str:
-        sign = "+" if offset_hours >= 0 else "-"
-        return f"{sign}{abs(offset_hours):02d}:00"
 
     async def add_card(self, external_id: str, card_no: str) -> EnrollResult:
         # Прошивка V4.48 — одиночный объект CardInfo
