@@ -657,6 +657,32 @@ class IsapiClient:
         except Exception as e:
             return EnrollResult(success=False, detail=str(e)[:200])
 
+    async def set_time(self) -> bool:
+        """Синхронизирует время устройства с временем сервера (UTC, ISO 8601).
+
+        Делает PUT /ISAPI/System/time?format=json с manual режимом.
+        Возвращает True если устройство приняло.
+        """
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+00:00")
+        body = {
+            "Time": {
+                "timeMode": "manual",
+                "localTime": now,
+                "timeZone": "CST-0:00:00",  # UTC
+            }
+        }
+        try:
+            async with self._client() as c:
+                r = await c.put(
+                    "/ISAPI/System/time?format=json", json=body, timeout=10.0
+                )
+                data = self._parse(r)
+                ok, _ = self._success(data)
+                return ok
+        except Exception as e:
+            log.warning("set_time failed: %s", e)
+            return False
+
     async def add_card(self, external_id: str, card_no: str) -> EnrollResult:
         # Прошивка V4.48 — одиночный объект CardInfo
         body = {

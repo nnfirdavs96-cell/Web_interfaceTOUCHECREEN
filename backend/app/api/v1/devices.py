@@ -96,6 +96,11 @@ async def test_connection(
             device.serial_number = info.serial_number
         if info.firmware:
             device.firmware = info.firmware
+        # Параллельно синхронизируем время устройства с временем сервера
+        try:
+            await client.set_time()
+        except Exception:
+            pass
     db.commit()
     return DeviceTestResult(
         online=info.online,
@@ -103,6 +108,19 @@ async def test_connection(
         serial_number=info.serial_number,
         firmware=info.firmware,
     )
+
+
+@router.post("/{device_id}/sync-time")
+async def sync_time(
+    device_id: UUID,
+    db: Session = Depends(get_db),
+    _: User = Depends(require("devices.write")),
+):
+    """Принудительная синхронизация времени устройства с временем сервера."""
+    device = crud.get_or_404(db, Device, device_id)
+    client = HikvisionService.client_for(device)
+    ok = await client.set_time()
+    return {"success": ok, "detail": "Время синхронизировано" if ok else "Не удалось задать время"}
 
 
 @router.get("/{device_id}/snapshot")

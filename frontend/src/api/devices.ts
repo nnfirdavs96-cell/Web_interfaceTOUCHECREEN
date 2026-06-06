@@ -12,6 +12,8 @@ export const devicesApi = {
   test: (id: string) =>
     api.post<DeviceTestResult>(`/devices/${id}/test-connection`).then((r) => r.data),
   sync: (id: string) => api.post(`/devices/${id}/sync`),
+  syncTime: (id: string) =>
+    api.post<{ success: boolean; detail: string }>(`/devices/${id}/sync-time`).then((r) => r.data),
   snapshotUrl: (id: string, token: string, cacheKey?: number) =>
     `/api/v1/devices/${id}/snapshot?t=${encodeURIComponent(token)}${cacheKey ? `&_=${cacheKey}` : ""}`,
 };
