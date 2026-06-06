@@ -26,8 +26,19 @@ interface Form {
   username?: string;
   password?: string;
   purpose?: string;
+  timezone_offset?: number;
   comment?: string;
 }
+
+const TIMEZONES: { value: number; label: string }[] = [
+  { value: 0, label: "UTC (Лондон)" },
+  { value: 3, label: "UTC+3 (Москва)" },
+  { value: 4, label: "UTC+4 (Ереван, Баку)" },
+  { value: 5, label: "UTC+5 (Ташкент, Худжанд, Алматы)" },
+  { value: 6, label: "UTC+6 (Бишкек, Астана)" },
+  { value: 7, label: "UTC+7 (Бангкок, Новосиб)" },
+  { value: 8, label: "UTC+8 (Пекин)" },
+];
 
 export default function DevicesPage() {
   const qc = useQueryClient();
@@ -92,7 +103,13 @@ export default function DevicesPage() {
 
   function openCreate() {
     setEditing(null);
-    setForm({ port: 80, type: "multi", purpose: "entry", username: "admin" });
+    setForm({
+      port: 80,
+      type: "multi",
+      purpose: "entry",
+      username: "admin",
+      timezone_offset: 5,
+    });
     setOpen(true);
   }
   function openEdit(d: Device) {
@@ -105,6 +122,7 @@ export default function DevicesPage() {
       port: d.port,
       username: d.username,
       purpose: d.purpose,
+      timezone_offset: d.timezone_offset ?? 5,
       comment: d.comment ?? "",
     });
     setOpen(true);
@@ -308,6 +326,17 @@ export default function DevicesPage() {
               <option value="">— не привязано —</option>
               {branches.data?.items.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Часовой пояс устройства">
+            <select
+              value={form.timezone_offset ?? 5}
+              onChange={(e) => setForm({ ...form, timezone_offset: Number(e.target.value) })}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+            >
+              {TIMEZONES.map((tz) => (
+                <option key={tz.value} value={tz.value}>{tz.label}</option>
               ))}
             </select>
           </Field>

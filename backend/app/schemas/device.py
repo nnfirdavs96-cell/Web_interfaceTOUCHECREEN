@@ -12,6 +12,7 @@ class DeviceBase(BaseModel):
     port: int = Field(default=80, ge=1, le=65535)
     username: str = Field(min_length=1, max_length=128)
     purpose: str = "entry"
+    timezone_offset: int = Field(default=5, ge=-12, le=14)
     comment: str | None = None
 
 
@@ -28,6 +29,7 @@ class DeviceUpdate(BaseModel):
     username: str | None = None
     password: str | None = None
     purpose: str | None = None
+    timezone_offset: int | None = None
     comment: str | None = None
 
 

@@ -69,6 +69,7 @@ export interface Device {
   online: boolean;
   last_seen_at: string | null;
   purpose: string;
+  timezone_offset: number;
   comment: string | null;
   created_at: string;
   updated_at: string;
