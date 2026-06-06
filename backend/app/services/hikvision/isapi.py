@@ -460,10 +460,10 @@ class IsapiClient:
             # Компактный JSON без пробелов — иначе curl -F может парсить криво
             face_info_compact = json.dumps(face_info, separators=(",", ":"))
             args = [
-                curl_path, "-s", "-X", "POST", "--digest",
+                curl_path, "-s", "-X", "PUT", "--digest",
                 "-u", f"{self.conn.username}:{self.conn.password}",
                 "-F", f"FaceDataRecord={face_info_compact};type=application/json",
-                "-F", f"img=@{tmp_path};type=image/jpeg",
+                "-F", f"FaceImage=@{tmp_path};type=image/jpeg",
                 "--connect-timeout", "10",
                 "--max-time", "30",
                 url,
@@ -498,6 +498,9 @@ class IsapiClient:
                     "R", (), {"status_code": 200, "text": text[:500]}
                 )()
                 err_detail = self._friendly_error(data, fake_r, detail)
+                # если не распознали известную ошибку — покажем сырой ответ
+                if not data:
+                    err_detail = f"Ответ устройства: {text[:300] or '(пусто)'}"
                 return EnrollResult(success=False, detail=err_detail)
             return EnrollResult(
                 success=True,
@@ -658,30 +661,75 @@ class IsapiClient:
             return EnrollResult(success=False, detail=str(e)[:200])
 
     async def set_time(self) -> bool:
-        """Синхронизирует время устройства с временем сервера (UTC, ISO 8601).
+        """Синхронизирует время устройства с сервером.
 
-        Делает PUT /ISAPI/System/time?format=json с manual режимом.
-        Возвращает True если устройство приняло.
+        Пробует XML и JSON; сохраняет существующий timeZone устройства,
+        меняет только localTime под этот же часовой пояс.
         """
-        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+00:00")
-        body = {
-            "Time": {
-                "timeMode": "manual",
-                "localTime": now,
-                "timeZone": "CST-0:00:00",  # UTC
-            }
-        }
         try:
             async with self._client() as c:
-                r = await c.put(
-                    "/ISAPI/System/time?format=json", json=body, timeout=10.0
+                # 1. Читаем текущую конфигурацию времени, чтобы взять timeZone
+                rget = await c.get("/ISAPI/System/time?format=json", timeout=10.0)
+                cur = self._parse(rget)
+                tinfo = cur.get("Time") or {}
+                tz = tinfo.get("timeZone") or "CST-5:00:00"
+
+                # 2. Вычисляем локальное время в этом часовом поясе
+                offset_hours = self._tz_offset_hours(tz)
+                local = datetime.now(timezone.utc) + timedelta(hours=offset_hours)
+                local_str = local.strftime(f"%Y-%m-%dT%H:%M:%S{self._tz_suffix(offset_hours)}")
+
+                # 3. XML (наиболее совместимый для V4.48)
+                xml_body = (
+                    '<?xml version="1.0" encoding="UTF-8"?>'
+                    '<Time version="2.0" xmlns="http://www.isapi.org/ver20/XMLSchema">'
+                    "<timeMode>manual</timeMode>"
+                    f"<localTime>{local_str}</localTime>"
+                    f"<timeZone>{tz}</timeZone>"
+                    "</Time>"
                 )
-                data = self._parse(r)
-                ok, _ = self._success(data)
+                r = await c.put(
+                    "/ISAPI/System/time",
+                    headers={"Content-Type": "application/xml"},
+                    content=xml_body,
+                    timeout=10.0,
+                )
+                ok, _ = self._success(self._parse(r))
+                if ok:
+                    return True
+
+                # 4. JSON fallback
+                rj = await c.put(
+                    "/ISAPI/System/time?format=json",
+                    json={
+                        "Time": {
+                            "timeMode": "manual",
+                            "localTime": local_str,
+                            "timeZone": tz,
+                        }
+                    },
+                    timeout=10.0,
+                )
+                ok, _ = self._success(self._parse(rj))
                 return ok
         except Exception as e:
             log.warning("set_time failed: %s", e)
             return False
+
+    @staticmethod
+    def _tz_offset_hours(tz: str) -> int:
+        """`CST-5:00:00` → +5, `CST+3:00:00` → -3 (Hikvision инвертирует знак)."""
+        m = re.search(r"CST([+-])(\d+)", tz or "")
+        if not m:
+            return 5  # дефолт UTC+5
+        sign, hours = m.group(1), int(m.group(2))
+        # В формате Hikvision CST-5 означает UTC+5
+        return hours if sign == "-" else -hours
+
+    @staticmethod
+    def _tz_suffix(offset_hours: int) -> str:
+        sign = "+" if offset_hours >= 0 else "-"
+        return f"{sign}{abs(offset_hours):02d}:00"
 
     async def add_card(self, external_id: str, card_no: str) -> EnrollResult:
         # Прошивка V4.48 — одиночный объект CardInfo
