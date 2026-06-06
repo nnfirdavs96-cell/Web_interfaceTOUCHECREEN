@@ -3,9 +3,12 @@
 Поддерживает обе формы ответа (JSON и XML) — некоторые модели возвращают XML
 даже при `format=json`. Авторизация — HTTP Digest.
 """
+import asyncio
 import json
 import logging
 import re
+import shutil
+import tempfile
 import uuid
 from datetime import datetime, timezone
 from xml.etree import ElementTree as ET
@@ -423,15 +426,94 @@ class IsapiClient:
     ) -> EnrollResult:
         """Загружает фото лица в библиотеку распознавания (HCFaceLibblackFD).
 
-        POST /Intelligent/FDLib/FDSetUp реально делает face detection и сохраняет.
-        Multipart собран вручную (как curl), потому что httpx добавляет
-        filename="" в form-field части и устройство возвращает methodNotAllowed.
+        На DS-K1T343 V4.48 endpoint POST /Intelligent/FDLib/FDSetUp реально
+        делает face detection. httpx-multipart этой прошивкой парсится как
+        methodNotAllowed, а curl -F отрабатывает. Поэтому используем
+        subprocess curl — гарантировано та же форма что в работающем тесте.
         """
         face_info = {
             "faceLibType": "blackFD",
             "FDID": "1",
             "FPID": str(external_id),
         }
+
+        # Если curl доступен (он есть в образе backend) — используем его
+        curl_path = shutil.which("curl")
+        if curl_path:
+            return await self._upload_face_curl(curl_path, face_info, image_bytes)
+
+        # Fallback: httpx с ручным multipart
+        return await self._upload_face_httpx(face_info, image_bytes)
+
+    async def _upload_face_curl(
+        self, curl_path: str, face_info: dict, image_bytes: bytes
+    ) -> EnrollResult:
+        """Загрузка через subprocess curl (надёжно, как в наших ручных тестах)."""
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:
+            f.write(image_bytes)
+            tmp_path = f.name
+        try:
+            url = (
+                f"{self.base}/ISAPI/Intelligent/FDLib/FDSetUp"
+                f"?format=json&FDID=1&faceLibType=blackFD"
+            )
+            args = [
+                curl_path, "-s", "-X", "POST", "--digest",
+                "-u", f"{self.conn.username}:{self.conn.password}",
+                "-F", f"FaceDataRecord={json.dumps(face_info)};type=application/json",
+                "-F", f"img=@{tmp_path};type=image/jpeg",
+                "--connect-timeout", "10",
+                "--max-time", "30",
+                url,
+            ]
+            proc = await asyncio.create_subprocess_exec(
+                *args,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await proc.communicate()
+            text = stdout.decode("utf-8", errors="replace")
+            try:
+                data = json.loads(text) if text.strip().startswith("{") else self._parse_xml_text(text)
+            except Exception:
+                data = {}
+            ok, detail = self._success(data)
+            if not ok:
+                err_detail = self._friendly_error(
+                    data,
+                    type("R", (), {"status_code": 200, "text": text[:500]})(),
+                    detail,
+                )
+                return EnrollResult(success=False, detail=err_detail)
+            return EnrollResult(
+                success=True,
+                detail=f"OK · лицо сохранено в библиотеке ({len(image_bytes)//1024} КБ)",
+                value_ref=f"FACE-{face_info['FPID']}",
+            )
+        except Exception as e:
+            return EnrollResult(success=False, detail=f"curl exception: {e}"[:300])
+        finally:
+            try:
+                import os
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+    @staticmethod
+    def _parse_xml_text(text: str) -> dict:
+        text = text.lstrip()
+        if not text.startswith("<"):
+            return {}
+        try:
+            root = ET.fromstring(text)
+            return {_strip_ns(root.tag): _xml_to_dict(root)}
+        except Exception:
+            return {}
+
+    async def _upload_face_httpx(
+        self, face_info: dict, image_bytes: bytes
+    ) -> EnrollResult:
+        """Резервная httpx-реализация — на случай если curl недоступен."""
         boundary = "----HikBoundary7MA4YWxkTrZu0gW"
         face_json = json.dumps(face_info).encode()
 
@@ -472,7 +554,7 @@ class IsapiClient:
                         return EnrollResult(
                             success=True,
                             detail=f"OK · лицо сохранено в библиотеке ({len(image_bytes)//1024} КБ)",
-                            value_ref=f"FACE-{external_id}",
+                            value_ref=f"FACE-{face_info['FPID']}",
                         )
                     sub = str(
                         (last_data.get("ResponseStatus") or last_data).get("subStatusCode") or ""
