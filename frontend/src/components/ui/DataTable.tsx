@@ -26,63 +26,69 @@ export function DataTable<T>({
   empty = "Нет данных",
 }: Props<T>) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-      <table className="w-full text-sm">
-        <thead className="bg-slate-50 dark:bg-slate-800/60">
-          <tr>
-            {columns.map((c) => (
-              <th
-                key={c.key}
-                style={c.width ? { width: c.width } : undefined}
-                className={cn(
-                  "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500",
-                  c.className,
-                )}
-              >
-                {c.header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {loading && (
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="border-b border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/40">
             <tr>
-              <td colSpan={columns.length} className="py-10 text-center text-slate-400">
-                Загрузка…
-              </td>
+              {columns.map((c) => (
+                <th
+                  key={c.key}
+                  style={c.width ? { width: c.width } : undefined}
+                  className={cn(
+                    "px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500",
+                    c.className,
+                  )}
+                >
+                  {c.header}
+                </th>
+              ))}
             </tr>
-          )}
-          {!loading && rows.length === 0 && (
-            <tr>
-              <td colSpan={columns.length} className="py-10 text-center text-slate-400">
-                {empty}
-              </td>
-            </tr>
-          )}
-          {!loading &&
-            rows.map((row) => (
-              <tr
-                key={rowKey(row)}
-                onClick={() => onRowClick?.(row)}
-                className={cn(
-                  "border-t border-slate-100 dark:border-slate-800",
-                  onRowClick && "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60",
-                )}
-              >
-                {columns.map((c) => (
-                  <td
-                    key={c.key}
-                    className={cn("px-4 py-3 text-slate-700 dark:text-slate-300", c.className)}
-                  >
-                    {c.render
-                      ? c.render(row)
-                      : ((row as Record<string, React.ReactNode>)[c.key] ?? "—")}
-                  </td>
-                ))}
+          </thead>
+          <tbody>
+            {loading && (
+              <tr>
+                <td colSpan={columns.length} className="py-12 text-center text-sm text-slate-400">
+                  Загрузка…
+                </td>
               </tr>
-            ))}
-        </tbody>
-      </table>
+            )}
+            {!loading && rows.length === 0 && (
+              <tr>
+                <td colSpan={columns.length} className="py-12 text-center text-sm text-slate-400">
+                  {empty}
+                </td>
+              </tr>
+            )}
+            {!loading &&
+              rows.map((row) => (
+                <tr
+                  key={rowKey(row)}
+                  onClick={() => onRowClick?.(row)}
+                  className={cn(
+                    "border-t border-slate-100 transition-colors dark:border-slate-800/60",
+                    onRowClick &&
+                      "cursor-pointer hover:bg-brand/5 dark:hover:bg-brand/10",
+                  )}
+                >
+                  {columns.map((c) => (
+                    <td
+                      key={c.key}
+                      className={cn(
+                        "px-4 py-3 text-slate-700 dark:text-slate-300",
+                        c.className,
+                      )}
+                    >
+                      {c.render
+                        ? c.render(row)
+                        : ((row as Record<string, React.ReactNode>)[c.key] ?? "—")}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
