@@ -1,5 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Clock, Cpu, Pencil, Plus, RefreshCw, Trash2, Wifi, WifiOff } from "lucide-react";
+import {
+  Clock,
+  Cpu,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Trash2,
+  Users,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { branchesApi } from "@/api/branches";
 import { devicesApi } from "@/api/devices";
@@ -97,6 +107,12 @@ export default function DevicesPage() {
 
   const timeSyncMut = useMutation({
     mutationFn: (id: string) => devicesApi.syncTime(id),
+    onSuccess: (res, id) =>
+      setTestResult((p) => ({ ...p, [id]: res.detail })),
+  });
+
+  const syncAllMut = useMutation({
+    mutationFn: (id: string) => devicesApi.syncAllEmployees(id),
     onSuccess: (res, id) =>
       setTestResult((p) => ({ ...p, [id]: res.detail })),
   });
@@ -228,6 +244,15 @@ export default function DevicesPage() {
                 title="Синхронизировать время устройства с временем сервера"
               >
                 <Clock className="h-3.5 w-3.5" /> Время
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => syncAllMut.mutate(d.id)}
+                disabled={syncAllMut.isPending}
+                title="Залить ВСЕХ активных сотрудников из платформы на это устройство"
+              >
+                <Users className="h-3.5 w-3.5" /> Все сотрудники
               </Button>
               <Button size="sm" variant="ghost" onClick={() => openEdit(d)}>
                 <Pencil className="h-3.5 w-3.5" />

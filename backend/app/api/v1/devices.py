@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api import crud
@@ -106,6 +107,28 @@ async def test_connection(
             await client.ensure_24x7_schedule()
         except Exception:
             pass
+        # Залить всех активных сотрудников из БД на устройство
+        try:
+            from app.models import Employee
+
+            employees = list(
+                db.scalars(
+                    select(Employee).where(
+                        Employee.status == "active",
+                        Employee.external_id.is_not(None),
+                    )
+                ).all()
+            )
+            for emp in employees:
+                full_name = " ".join(
+                    filter(None, [emp.last_name, emp.first_name, emp.middle_name])
+                )
+                try:
+                    await client.upsert_user(emp.external_id, full_name)
+                except Exception:
+                    pass
+        except Exception:
+            pass
     db.commit()
     return DeviceTestResult(
         online=info.online,
@@ -162,6 +185,65 @@ async def device_snapshot(
         media_type="image/jpeg",
         headers={"Cache-Control": "no-store"},
     )
+
+
+@router.post("/{device_id}/sync-all-employees")
+async def sync_all_employees(
+    device_id: UUID,
+    db: Session = Depends(get_db),
+    _: User = Depends(require("devices.sync")),
+):
+    """Пушит всех активных сотрудников из БД на устройство.
+
+    Используется когда устройство впервые добавили или для восстановления
+    рассинхрона (например после сброса устройства).
+    """
+    from app.models import Employee
+
+    device = crud.get_or_404(db, Device, device_id)
+    client = HikvisionService.client_for(device)
+
+    employees = list(
+        db.scalars(
+            select(Employee).where(
+                Employee.status == "active",
+                Employee.external_id.is_not(None),
+            )
+        ).all()
+    )
+    success = 0
+    failed = 0
+    errors: list[str] = []
+    for emp in employees:
+        full_name = " ".join(
+            filter(None, [emp.last_name, emp.first_name, emp.middle_name])
+        )
+        try:
+            res = await client.upsert_user(emp.external_id, full_name)
+            if res.success:
+                success += 1
+            else:
+                failed += 1
+                if len(errors) < 3:
+                    errors.append(f"{emp.external_id}: {res.detail[:60]}")
+        except Exception as e:
+            failed += 1
+            if len(errors) < 3:
+                errors.append(f"{emp.external_id}: {str(e)[:60]}")
+
+    detail = f"Залито {success} из {len(employees)} сотрудников"
+    if failed:
+        detail += f" · ошибок: {failed}"
+        if errors:
+            detail += " (" + "; ".join(errors) + ")"
+
+    return {
+        "success": failed == 0,
+        "synced": success,
+        "failed": failed,
+        "total": len(employees),
+        "detail": detail,
+    }
 
 
 @router.post("/{device_id}/sync", status_code=202)
