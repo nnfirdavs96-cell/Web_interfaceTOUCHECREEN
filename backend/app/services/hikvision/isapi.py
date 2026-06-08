@@ -338,6 +338,7 @@ class IsapiClient:
         )
         try:
             async with self._client() as c:
+                log.info("fingerprint step 1: capture for employeeNo=%s", external_id)
                 r = await c.post(
                     "/ISAPI/AccessControl/CaptureFingerPrint",
                     headers={"Content-Type": "application/xml"},
@@ -345,39 +346,78 @@ class IsapiClient:
                     timeout=60.0,
                 )
                 text = r.text or ""
+                log.info(
+                    "fingerprint capture response: HTTP %s body=%s",
+                    r.status_code,
+                    text[:400],
+                )
                 # извлекаем fingerData из XML-ответа
                 m = re.search(r"<fingerData>([^<]+)</fingerData>", text)
                 if not m:
                     data = self._parse(r)
-                    return EnrollResult(
-                        success=False,
-                        detail=self._friendly_error(data, r, "не получен отпечаток"),
-                    )
+                    detail = self._friendly_error(data, r, "не получен отпечаток")
+                    # Если ничего полезного — покажем сырой ответ
+                    if "invalidoperation" in detail.lower() or "notSupport" in detail:
+                        detail = (
+                            f"Захват не удался: {detail}. Возможно вы не успели "
+                            "приложить палец, или устройство занято. Попробуйте снова."
+                        )
+                    return EnrollResult(success=False, detail=detail)
                 finger_data = m.group(1)
                 qm = re.search(r"<fingerPrintQuality>(\d+)</fingerPrintQuality>", text)
                 quality = int(qm.group(1)) if qm else 0
+                log.info(
+                    "fingerprint captured: %d chars, quality=%d",
+                    len(finger_data),
+                    quality,
+                )
 
                 # --- Шаг 2: сохранение ---
-                save_body = {
-                    "FingerPrintCfg": {
-                        "employeeNo": str(external_id),
-                        "enableCardReader": [1],
-                        "fingerPrintID": finger_no,
-                        "fingerType": "normalFP",
-                        "fingerData": finger_data,
+                # Hikvision хранит с ведущими нулями, но для безопасности попробуем
+                # сначала как есть, потом без ведущих нулей при ошибке
+                async def _save(emp_id_str: str) -> tuple[bool, str, dict]:
+                    save_body = {
+                        "FingerPrintCfg": {
+                            "employeeNo": emp_id_str,
+                            "enableCardReader": [1],
+                            "fingerPrintID": finger_no,
+                            "fingerType": "normalFP",
+                            "fingerData": finger_data,
+                        }
                     }
-                }
-                rs = await c.post(
-                    "/ISAPI/AccessControl/FingerPrintDownload?format=json",
-                    json=save_body,
-                    timeout=30.0,
-                )
-                sdata = self._parse(rs)
-                ok, detail = self._success(sdata)
+                    log.info(
+                        "fingerprint step 2: download for employeeNo=%s", emp_id_str
+                    )
+                    rs = await c.post(
+                        "/ISAPI/AccessControl/FingerPrintDownload?format=json",
+                        json=save_body,
+                        timeout=30.0,
+                    )
+                    sdata = self._parse(rs)
+                    ok_, detail_ = self._success(sdata)
+                    log.info(
+                        "fingerprint save response: HTTP %s ok=%s detail=%s",
+                        rs.status_code,
+                        ok_,
+                        detail_,
+                    )
+                    return ok_, detail_, sdata
+
+                # 1-я попытка: оригинальный employeeNo
+                ok, detail, sdata = await _save(str(external_id))
+
+                # 2-я попытка: без ведущих нулей если 1-я не удалась
+                stripped = str(external_id).lstrip("0") or "0"
+                if not ok and stripped != str(external_id):
+                    log.info(
+                        "retry fingerprint save with stripped id: %s", stripped
+                    )
+                    ok, detail, sdata = await _save(stripped)
+
                 if not ok:
                     return EnrollResult(
                         success=False,
-                        detail=self._friendly_error(sdata, rs, detail),
+                        detail=self._friendly_error(sdata, r, detail),
                     )
                 return EnrollResult(
                     success=True,
