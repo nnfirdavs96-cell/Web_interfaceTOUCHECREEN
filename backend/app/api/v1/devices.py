@@ -101,6 +101,11 @@ async def test_connection(
             await client.set_time(device.timezone_offset)
         except Exception:
             pass
+        # Гарантируем 24/7 расписание доступа (иначе устройство отказывает всем)
+        try:
+            await client.ensure_24x7_schedule()
+        except Exception:
+            pass
     db.commit()
     return DeviceTestResult(
         online=info.online,
