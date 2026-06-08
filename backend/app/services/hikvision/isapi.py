@@ -113,8 +113,26 @@ class IsapiClient:
         try:
             async with self._client() as c:
                 r = await c.get("/ISAPI/System/deviceInfo?format=json")
+                if r.status_code == 401:
+                    return DeviceInfo(
+                        online=False,
+                        detail="❌ Неверный логин или пароль устройства",
+                    )
+                if r.status_code == 403:
+                    return DeviceInfo(
+                        online=False,
+                        detail="❌ Доступ запрещён — у пользователя нет прав ISAPI",
+                    )
+                if r.status_code == 404:
+                    return DeviceInfo(
+                        online=False,
+                        detail="❌ Endpoint не найден — проверьте порт (обычно 80, не 8000)",
+                    )
                 if r.status_code != 200:
-                    return DeviceInfo(online=False, detail=f"HTTP {r.status_code}: {r.text[:120]}")
+                    return DeviceInfo(
+                        online=False,
+                        detail=f"HTTP {r.status_code}: {r.text[:120]}",
+                    )
                 data = self._parse(r)
                 info = data.get("DeviceInfo") or data
                 return DeviceInfo(
@@ -123,8 +141,26 @@ class IsapiClient:
                     serial_number=info.get("serialNumber"),
                     firmware=info.get("firmwareVersion"),
                 )
+        except httpx.ConnectError:
+            return DeviceInfo(
+                online=False,
+                detail=(
+                    "❌ Устройство не отвечает. Проверьте: 1) включено ли оно, "
+                    "2) правильный ли IP, 3) порт (обычно 80), 4) есть ли сеть с сервера к устройству"
+                ),
+            )
+        except httpx.ConnectTimeout:
+            return DeviceInfo(
+                online=False,
+                detail="❌ Тайм-аут подключения — устройство недоступно по сети",
+            )
+        except httpx.ReadTimeout:
+            return DeviceInfo(
+                online=False,
+                detail="❌ Устройство не успело ответить (перегружено или зависло)",
+            )
         except Exception as e:
-            return DeviceInfo(online=False, detail=str(e)[:200])
+            return DeviceInfo(online=False, detail=f"❌ Ошибка: {str(e)[:200]}")
 
     # ---------- events ----------
 
