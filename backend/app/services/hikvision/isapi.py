@@ -287,59 +287,67 @@ class IsapiClient:
             return EnrollResult(success=False, detail=str(e)[:200])
 
     async def capture_fingerprint(self, external_id: str, finger_no: int = 1) -> EnrollResult:
-        """Дистанционная регистрация отпечатка.
+        """Двухшаговая регистрация отпечатка (проверено на DS-K1T343 V4.48):
 
-        Устройство покажет «Поднесите палец» — сотрудник прикладывает 3 раза.
-        V4.48 prefers XML body for this endpoint (returns badXmlContent on JSON).
+        1) POST /CaptureFingerPrint (XML) → терминал «Поднесите палец»,
+           возвращает fingerData (base64-шаблон)
+        2) POST /FingerPrintDownload (JSON) с этим fingerData → сохраняет
+           отпечаток сотруднику (numOfFP += 1)
         """
+        # --- Шаг 1: захват ---
         xml_body = (
-            f'<?xml version="1.0" encoding="UTF-8"?>'
-            f'<CaptureFingerPrintCond version="2.0" '
-            f'xmlns="http://www.isapi.org/ver20/XMLSchema">'
+            f"<CaptureFingerPrintCond>"
             f"<fingerNo>{finger_no}</fingerNo>"
-            f"<employeeNo>{external_id}</employeeNo>"
             f"</CaptureFingerPrintCond>"
         )
-
-        async def _try(headers: dict, body, path: str):
-            async with self._client() as c:
-                r = await c.post(path, headers=headers, content=body, timeout=60.0)
-                return r, self._parse(r)
-
         try:
-            # 1) XML на основной endpoint (для V4.48)
-            r, data = await _try(
-                {"Content-Type": "application/xml"},
-                xml_body,
-                "/ISAPI/AccessControl/CaptureFingerPrint",
-            )
-            ok, detail = self._success(data)
+            async with self._client() as c:
+                r = await c.post(
+                    "/ISAPI/AccessControl/CaptureFingerPrint",
+                    headers={"Content-Type": "application/xml"},
+                    content=xml_body,
+                    timeout=60.0,
+                )
+                text = r.text or ""
+                # извлекаем fingerData из XML-ответа
+                m = re.search(r"<fingerData>([^<]+)</fingerData>", text)
+                if not m:
+                    data = self._parse(r)
+                    return EnrollResult(
+                        success=False,
+                        detail=self._friendly_error(data, r, "не получен отпечаток"),
+                    )
+                finger_data = m.group(1)
+                qm = re.search(r"<fingerPrintQuality>(\d+)</fingerPrintQuality>", text)
+                quality = int(qm.group(1)) if qm else 0
 
-            # 2) если badXml/badJson — попробовать JSON с ?format=json
-            sub = str((data.get("ResponseStatus") or data).get("subStatusCode") or "")
-            if not ok and ("xml" in sub.lower() or "json" in sub.lower() or r.status_code == 400):
-                import json as _json
-                body = _json.dumps({
-                    "CaptureFingerPrintCond": {
-                        "fingerNo": finger_no, "employeeNo": str(external_id),
+                # --- Шаг 2: сохранение ---
+                save_body = {
+                    "FingerPrintCfg": {
+                        "employeeNo": str(external_id),
+                        "enableCardReader": [1],
+                        "fingerPrintID": finger_no,
+                        "fingerType": "normalFP",
+                        "fingerData": finger_data,
                     }
-                })
-                r, data = await _try(
-                    {"Content-Type": "application/json"},
-                    body,
-                    "/ISAPI/AccessControl/CaptureFingerPrint?format=json",
+                }
+                rs = await c.post(
+                    "/ISAPI/AccessControl/FingerPrintDownload?format=json",
+                    json=save_body,
+                    timeout=30.0,
                 )
-                ok, detail = self._success(data)
-
-            if not ok:
+                sdata = self._parse(rs)
+                ok, detail = self._success(sdata)
+                if not ok:
+                    return EnrollResult(
+                        success=False,
+                        detail=self._friendly_error(sdata, rs, detail),
+                    )
                 return EnrollResult(
-                    success=False, detail=self._friendly_error(data, r, detail)
+                    success=True,
+                    detail=f"OK · отпечаток #{finger_no} сохранён (качество {quality})",
+                    value_ref=f"FP-{finger_no}",
                 )
-            return EnrollResult(
-                success=True,
-                detail=f"OK · палец #{finger_no} — приложите палец к устройству",
-                value_ref=f"FP-{finger_no}",
-            )
         except Exception as e:
             return EnrollResult(success=False, detail=str(e)[:200])
 
