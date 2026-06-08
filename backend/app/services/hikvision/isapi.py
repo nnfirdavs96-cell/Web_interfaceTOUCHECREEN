@@ -329,13 +329,19 @@ class IsapiClient:
            возвращает fingerData (base64-шаблон)
         2) POST /FingerPrintDownload (JSON) с этим fingerData → сохраняет
            отпечаток сотруднику (numOfFP += 1)
+
+        Между шагами используются ОТДЕЛЬНЫЕ HTTP-клиенты, потому что httpx
+        Digest auth кэширует nonce и не делает retry на втором запросе.
         """
-        # --- Шаг 1: захват ---
         xml_body = (
             f"<CaptureFingerPrintCond>"
             f"<fingerNo>{finger_no}</fingerNo>"
             f"</CaptureFingerPrintCond>"
         )
+
+        # --- Шаг 1: захват (отдельный клиент) ---
+        finger_data: str | None = None
+        quality = 0
         try:
             async with self._client() as c:
                 log.info("fingerprint step 1: capture for employeeNo=%s", external_id)
@@ -351,12 +357,10 @@ class IsapiClient:
                     r.status_code,
                     text[:400],
                 )
-                # извлекаем fingerData из XML-ответа
                 m = re.search(r"<fingerData>([^<]+)</fingerData>", text)
                 if not m:
                     data = self._parse(r)
                     detail = self._friendly_error(data, r, "не получен отпечаток")
-                    # Если ничего полезного — покажем сырой ответ
                     if "invalidoperation" in detail.lower() or "notSupport" in detail:
                         detail = (
                             f"Захват не удался: {detail}. Возможно вы не успели "
@@ -371,61 +375,57 @@ class IsapiClient:
                     len(finger_data),
                     quality,
                 )
-
-                # --- Шаг 2: сохранение ---
-                # Hikvision хранит с ведущими нулями, но для безопасности попробуем
-                # сначала как есть, потом без ведущих нулей при ошибке
-                async def _save(emp_id_str: str) -> tuple[bool, str, dict]:
-                    save_body = {
-                        "FingerPrintCfg": {
-                            "employeeNo": emp_id_str,
-                            "enableCardReader": [1],
-                            "fingerPrintID": finger_no,
-                            "fingerType": "normalFP",
-                            "fingerData": finger_data,
-                        }
-                    }
-                    log.info(
-                        "fingerprint step 2: download for employeeNo=%s", emp_id_str
-                    )
-                    rs = await c.post(
-                        "/ISAPI/AccessControl/FingerPrintDownload?format=json",
-                        json=save_body,
-                        timeout=30.0,
-                    )
-                    sdata = self._parse(rs)
-                    ok_, detail_ = self._success(sdata)
-                    log.info(
-                        "fingerprint save response: HTTP %s ok=%s detail=%s",
-                        rs.status_code,
-                        ok_,
-                        detail_,
-                    )
-                    return ok_, detail_, sdata
-
-                # 1-я попытка: оригинальный employeeNo
-                ok, detail, sdata = await _save(str(external_id))
-
-                # 2-я попытка: без ведущих нулей если 1-я не удалась
-                stripped = str(external_id).lstrip("0") or "0"
-                if not ok and stripped != str(external_id):
-                    log.info(
-                        "retry fingerprint save with stripped id: %s", stripped
-                    )
-                    ok, detail, sdata = await _save(stripped)
-
-                if not ok:
-                    return EnrollResult(
-                        success=False,
-                        detail=self._friendly_error(sdata, r, detail),
-                    )
-                return EnrollResult(
-                    success=True,
-                    detail=f"OK · отпечаток #{finger_no} сохранён (качество {quality})",
-                    value_ref=f"FP-{finger_no}",
-                )
         except Exception as e:
-            return EnrollResult(success=False, detail=str(e)[:200])
+            return EnrollResult(success=False, detail=f"Захват: {e}"[:200])
+
+        # --- Шаг 2: сохранение (ОТДЕЛЬНЫЙ клиент — иначе httpx digest не делает retry) ---
+        async def _save(emp_id_str: str) -> tuple[bool, str, dict, int]:
+            save_body = {
+                "FingerPrintCfg": {
+                    "employeeNo": emp_id_str,
+                    "enableCardReader": [1],
+                    "fingerPrintID": finger_no,
+                    "fingerType": "normalFP",
+                    "fingerData": finger_data,
+                }
+            }
+            log.info("fingerprint step 2: download for employeeNo=%s", emp_id_str)
+            async with self._client() as c2:
+                rs = await c2.post(
+                    "/ISAPI/AccessControl/FingerPrintDownload?format=json",
+                    json=save_body,
+                    timeout=30.0,
+                )
+                sdata = self._parse(rs)
+                ok_, detail_ = self._success(sdata)
+                log.info(
+                    "fingerprint save response: HTTP %s ok=%s detail=%s",
+                    rs.status_code,
+                    ok_,
+                    detail_,
+                )
+                return ok_, detail_, sdata, rs.status_code
+
+        try:
+            ok, detail, sdata, status_code = await _save(str(external_id))
+            stripped = str(external_id).lstrip("0") or "0"
+            if not ok and stripped != str(external_id):
+                log.info("retry fingerprint save with stripped id: %s", stripped)
+                ok, detail, sdata, status_code = await _save(stripped)
+
+            if not ok:
+                fake_r = type("R", (), {"status_code": status_code, "text": ""})()
+                return EnrollResult(
+                    success=False,
+                    detail=self._friendly_error(sdata, fake_r, detail),
+                )
+            return EnrollResult(
+                success=True,
+                detail=f"OK · отпечаток #{finger_no} сохранён (качество {quality})",
+                value_ref=f"FP-{finger_no}",
+            )
+        except Exception as e:
+            return EnrollResult(success=False, detail=f"Сохранение: {e}"[:200])
 
     async def capture_face(self, external_id: str) -> EnrollResult:
         """Удалённый запуск сканирования лица камерой устройства.
