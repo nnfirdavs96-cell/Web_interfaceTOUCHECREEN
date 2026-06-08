@@ -44,7 +44,8 @@ frontend/src/
 |---|---|---|
 | `/UserInfo/Record` POST | **single object** `{"UserInfo":{...}}` | НЕ массив! |
 | `/UserInfo/Modify` PUT | single object | Fallback из Record |
-| `/CaptureFingerPrint` POST | **XML body** | JSON → badXmlContent |
+| `/CaptureFingerPrint` POST | **XML body** | JSON → badXmlContent. Шаг 1: захват → fingerData base64 |
+| `/FingerPrintDownload` POST | **JSON** (не PUT!) | Шаг 2: сохранить fingerData сотруднику. PUT → methodNotAllowed |
 | `/CaptureCardInfo` POST | XML body | |
 | `/CardInfo/Record` POST | single object JSON | |
 | `/Intelligent/FDLib/FDSetUp` PUT | **multipart через `subprocess curl`** | httpx ломает формат. Поле **`FaceImage`** не `img`! |
@@ -69,6 +70,12 @@ weekPlan 24/7 + привязывает шаблон 1.
 - Это требует binary SDK на порту 8000, недоступный через HTTP
 - Поэтому лицо мы регистрируем тихим snapshot+upload в библиотеку `HCFaceLibblackFD`
 - Отпечаток и карту умеет (`CaptureFingerPrint` / `CaptureCardInfo` работают)
+
+## Отпечаток = ДВА шага (иначе numOfFP=0)
+
+1. `POST /CaptureFingerPrint` XML `<CaptureFingerPrintCond><fingerNo>1</fingerNo></...>` → терминал «Поднесите палец» → ответ XML с `<fingerData>base64</fingerData>`
+2. `POST /FingerPrintDownload?format=json` `{"FingerPrintCfg":{"employeeNo":"X","enableCardReader":[1],"fingerPrintID":1,"fingerType":"normalFP","fingerData":"<base64>"}}` → сохраняет
+Капчур БЕЗ download не сохраняет! `enableCardReader:[1]` обязателен.
 
 ## Статус этапов (7 шт.)
 
