@@ -291,6 +291,7 @@ export default function EmployeesPage() {
           <div className="grid grid-cols-2 gap-3">
             <Field label="ID сотрудника (для 1С)">
               <Input
+                placeholder="оставь пустым — присвоится автоматически"
                 value={form.external_id ?? ""}
                 onChange={(e) => setForm({ ...form, external_id: e.target.value })}
               />

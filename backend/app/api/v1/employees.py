@@ -105,8 +105,23 @@ async def create_employee(
     db: Session = Depends(get_db),
     user: User = Depends(require("employees.write")),
 ):
+    data = body.model_dump()
+    # Если external_id не указан — автогенерация следующего свободного номера
+    if not data.get("external_id"):
+        max_id = 0
+        for emp in db.scalars(
+            select(Employee).where(Employee.external_id.is_not(None))
+        ).all():
+            try:
+                n = int(emp.external_id)
+                if n > max_id:
+                    max_id = n
+            except (ValueError, TypeError):
+                continue
+        data["external_id"] = str(max(max_id + 1, 1001))
+
     emp = crud.create(
-        db, Employee, body.model_dump(), user=user, request=request, entity_type="employee"
+        db, Employee, data, user=user, request=request, entity_type="employee"
     )
     await _autosync_to_devices(db, emp, action="upsert")
     return emp

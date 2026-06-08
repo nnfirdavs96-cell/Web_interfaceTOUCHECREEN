@@ -380,8 +380,10 @@ function CredentialsTab({
   if (!externalId) {
     return (
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
-        Сначала заполните поле «ID сотрудника (для 1С)» — это employeeNo на устройстве.
-        Без него регистрация невозможна.
+        Поле «ID сотрудника (для 1С)» пустое. Откройте профиль и заполните его —
+        либо введите свой номер, либо просто оставьте пустым при создании
+        нового сотрудника, и система автоматически подберёт следующий
+        свободный номер (1001, 1002…).
       </div>
     );
   }
