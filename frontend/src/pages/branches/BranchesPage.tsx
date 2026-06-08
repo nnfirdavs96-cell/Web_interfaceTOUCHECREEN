@@ -9,6 +9,7 @@ import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Drawer } from "@/components/ui/Drawer";
 import { Field, Input, Textarea } from "@/components/ui/Input";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { WorkingHoursPicker } from "@/components/ui/WorkingHoursPicker";
 
 type Form = Partial<Branch>;
 
@@ -178,10 +179,9 @@ export default function BranchesPage() {
             </Field>
           </div>
           <Field label="График работы">
-            <Input
-              placeholder="напр. Пн-Пт 09:00–18:00"
+            <WorkingHoursPicker
               value={form.working_hours ?? ""}
-              onChange={(e) => setForm({ ...form, working_hours: e.target.value })}
+              onChange={(v) => setForm({ ...form, working_hours: v })}
             />
           </Field>
           <Field label="Комментарий">
