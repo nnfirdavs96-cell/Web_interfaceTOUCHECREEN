@@ -52,6 +52,16 @@ frontend/src/
 | `/Streaming/channels/101/picture` | GET | Канал 1 даёт 404, нужен **101** |
 | `/System/time` PUT | **XML без xmlns/version** | `CST-5:00:00` = UTC+5 (знак инвертирован) |
 | `/System/deviceInfo` GET | XML даже при `?format=json` | Парсер обрабатывает оба |
+| `/UserRightWeekPlanCfg/1` PUT | JSON, 56 слотов (7дн×8) | **Расписание доступа!** Без него «неверное время» |
+| `/UserRightPlanTemplate/1` PUT | JSON | enable+weekPlanNo:1 → привязка шаблона |
+
+## КРИТИЧНО: «неверное время» = пустое расписание доступа (не часы!)
+
+Если терминал постоянно пишет «неверное время» / отказывает в проходе даже
+с зарегистрированным лицом — это НЕ про clock. Это пустой `UserRightWeekPlanCfg/1`
+и выключенный `UserRightPlanTemplate/1` (с завода enable:false). Лечится
+`ensure_24x7_schedule()` (вызывается авто при test-connection). Включает
+weekPlan 24/7 + привязывает шаблон 1.
 
 ## Что V4.48 НЕ умеет
 
