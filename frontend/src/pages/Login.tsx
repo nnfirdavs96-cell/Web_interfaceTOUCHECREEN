@@ -122,7 +122,7 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-4 text-center text-[11px] text-slate-400">
-          Hikvision Access Platform · v0.7
+          ANT Access · v0.7
         </p>
       </div>
     </div>
