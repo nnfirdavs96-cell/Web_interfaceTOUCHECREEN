@@ -94,7 +94,7 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-slate-200 p-4 text-[11px] text-slate-400 dark:border-slate-800">
-        © 2026 Hikvision Access
+        © 2026 ANT Access
       </div>
     </aside>
   );
