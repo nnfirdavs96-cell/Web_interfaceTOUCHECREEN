@@ -49,11 +49,17 @@ class IsapiClient:
     def __init__(self, conn: DeviceConn, timeout: float = 15.0):
         self.conn = conn
         self.base = f"http://{conn.ip}:{conn.port}"
-        self.auth = DigestAuth(conn.username, conn.password)
         self.timeout = timeout
 
     def _client(self) -> httpx.AsyncClient:
-        return httpx.AsyncClient(base_url=self.base, auth=self.auth, timeout=self.timeout)
+        # СВЕЖИЙ DigestAuth для каждого клиента — иначе httpx переиспользует
+        # кэшированный nonce от прошлого запроса и устройство возвращает 401
+        # без challenge-retry.
+        return httpx.AsyncClient(
+            base_url=self.base,
+            auth=DigestAuth(self.conn.username, self.conn.password),
+            timeout=self.timeout,
+        )
 
     @staticmethod
     def _parse(r: httpx.Response) -> dict:
