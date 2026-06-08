@@ -705,6 +705,68 @@ class IsapiClient:
             log.warning("set_time exception: %s", e)
             return False
 
+    async def ensure_24x7_schedule(self) -> bool:
+        """Настраивает круглосуточное расписание доступа (шаблон №1).
+
+        На заводских/сброшенных DS-K1T343 weekPlan и planTemplate выключены,
+        из-за чего устройство отказывает всем проходам с «неверное время».
+        Здесь включаем weekPlan №1 (24/7) и привязываем к нему шаблон №1.
+        Идемпотентно — можно вызывать при каждом test-connection.
+        """
+        days = [
+            "Monday", "Tuesday", "Wednesday", "Thursday",
+            "Friday", "Saturday", "Sunday",
+        ]
+        segments = []
+        for d in days:
+            for i in range(1, 9):
+                segments.append(
+                    {
+                        "week": d,
+                        "id": i,
+                        "enable": i == 1,
+                        "TimeSegment": {
+                            "beginTime": "00:00:00",
+                            "endTime": "23:59:59" if i == 1 else "00:00:00",
+                        },
+                        "authenticationTimesEnabled": False,
+                        "authenticationTimes": 0,
+                    }
+                )
+        week_body = {"UserRightWeekPlanCfg": {"enable": True, "WeekPlanCfg": segments}}
+        tmpl_body = {
+            "UserRightPlanTemplate": {
+                "enable": True,
+                "templateName": "24-7",
+                "weekPlanNo": 1,
+                "holidayGroupNo": "",
+            }
+        }
+        try:
+            async with self._client() as c:
+                r1 = await c.put(
+                    "/ISAPI/AccessControl/UserRightWeekPlanCfg/1?format=json",
+                    json=week_body,
+                    timeout=15.0,
+                )
+                ok1, _ = self._success(self._parse(r1))
+                r2 = await c.put(
+                    "/ISAPI/AccessControl/UserRightPlanTemplate/1?format=json",
+                    json=tmpl_body,
+                    timeout=15.0,
+                )
+                ok2, _ = self._success(self._parse(r2))
+                if ok1 and ok2:
+                    log.info("24x7 schedule ensured on device %s", self.conn.ip)
+                else:
+                    log.warning(
+                        "ensure_24x7_schedule partial: week=%s tmpl=%s", ok1, ok2
+                    )
+                return ok1 and ok2
+        except Exception as e:
+            log.warning("ensure_24x7_schedule failed: %s", e)
+            return False
+
     async def add_card(self, external_id: str, card_no: str) -> EnrollResult:
         # Прошивка V4.48 — одиночный объект CardInfo
         body = {

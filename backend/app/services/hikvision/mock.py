@@ -101,3 +101,7 @@ class MockClient:
     async def set_time(self, offset_hours: int = 5) -> bool:
         await asyncio.sleep(0.05)
         return True
+
+    async def ensure_24x7_schedule(self) -> bool:
+        await asyncio.sleep(0.05)
+        return True
