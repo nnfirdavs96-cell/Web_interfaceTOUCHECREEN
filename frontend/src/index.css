@@ -1,33 +1,38 @@
-/* Manrope — заместитель Gilroy для типографики Calendly-стиля */
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
+/* Atlantic.vc — Monument substitute: Space Grotesk; Mono: JetBrains Mono */
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
 
-  /* === Calendly tokens === */
-  --color-midnight-navy: #0b3558;
-  --color-signal-blue: #006bff;
-  --color-slate-blue: #476788;
-  --color-carbon: #0a0a0a;
-  --color-paper: #ffffff;
-  --color-mist: #f8f9fb;
-  --color-fog: #e7edf6;
-  --color-mist-border: #d4e0ed;
-  --color-silver: #e6e6e6;
-  --color-steel-blue: #a6bbd1;
+  /* === Atlantic tokens === */
+  --color-ice-white: #d8eaff;
+  --color-void-black: #000000;
+  --color-carbon: #0d0d0f;
+  --color-graphite: #232529;
+  --color-slate: #2b2f33;
+  --color-iron: #41464c;
+  --color-iron-edge: #565657;
+  --color-fog-text: #6c757f;
+  --color-electric-cobalt: #1f58f2;
+  --color-signal-orange: #ff4105;
 
-  --radius-cards: 8px;
-  --radius-inputs: 4px;
-  --radius-buttons: 4px;
+  --radius-cards: 16px;
+  --radius-inputs: 8px;
+  --radius-buttons: 8px;
+}
 
-  --shadow-card:
-    rgba(71, 103, 136, 0.04) 0px 4px 5px 0px,
-    rgba(71, 103, 136, 0.03) 0px 8px 15px 0px,
-    rgba(71, 103, 136, 0.08) 0px 30px 50px 0px;
+/* Force dark canvas — Atlantic is dark-only */
+html {
+  background: #000000;
+}
+html.dark,
+html:not(.dark) {
+  /* Atlantic is dark regardless of toggle */
+  color-scheme: dark;
 }
 
 html,
@@ -37,47 +42,72 @@ body,
 }
 
 body {
-  @apply bg-mist text-carbon antialiased dark:bg-slate-950 dark:text-slate-100;
-  font-family:
-    "Manrope", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, sans-serif;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+  background: #000000;
+  color: var(--color-ice-white);
+  font-family: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
   font-weight: 400;
+  font-feature-settings: "ss01" on, "ss02" on;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Scrollbar в тон Calendly */
+/* Scrollbar — ice-white at low opacity on void */
 ::-webkit-scrollbar {
   @apply h-2 w-2;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply rounded-full bg-mist-border;
+  background: rgba(216, 234, 255, 0.14);
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-steel;
+  background: rgba(216, 234, 255, 0.28);
 }
 
-/* Единый focus ring — signal blue */
+/* Single focus ring — electric cobalt */
 *:focus-visible {
-  @apply outline-none ring-2 ring-signal/30 ring-offset-2 ring-offset-paper dark:ring-offset-slate-950;
+  outline: none;
+  box-shadow: 0 0 0 1px #1f58f2;
 }
 
-/* Заголовки — navy, никогда не чёрные. Manrope 700, tight tracking */
+/* Headings — Space Grotesk 400 (Monument single-weight philosophy) */
 h1, h2, h3, h4 {
-  color: var(--color-midnight-navy);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-.dark h1, .dark h2, .dark h3, .dark h4 {
-  color: #ffffff;
+  color: var(--color-ice-white);
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
 }
 
-/* Текст ссылок и интерактивные акценты */
 a {
-  color: var(--color-signal-blue);
+  color: var(--color-ice-white);
+  text-decoration: none;
 }
+a:hover {
+  color: var(--color-electric-cobalt);
+}
+
+/* Mono utility */
+.font-mono {
+  font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+}
+
+/* Atlantic decorative motif — wireframe corner dots */
+.wireframe-frame {
+  position: relative;
+  border: 1px solid rgba(216, 234, 255, 0.18);
+}
+.wireframe-frame::before,
+.wireframe-frame::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #1f58f2;
+  border-radius: 50%;
+}
+.wireframe-frame::before { top: -3px; left: -3px; }
+.wireframe-frame::after  { top: -3px; right: -3px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

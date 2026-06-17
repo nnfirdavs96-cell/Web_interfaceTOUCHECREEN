@@ -6,7 +6,6 @@ import {
   ClipboardList,
   Cpu,
   FileBarChart,
-  Fingerprint,
   LayoutDashboard,
   MapPin,
   Network,
@@ -36,22 +35,26 @@ const nav = [
 export function Sidebar() {
   const { t } = useTranslation();
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-mist-border bg-paper dark:border-slate-800 dark:bg-slate-900 md:flex">
-      <div className="flex h-[72px] items-center gap-3 border-b border-mist-border px-5 dark:border-slate-800">
-        <div className="flex h-10 w-10 items-center justify-center rounded-cards bg-signal text-white shadow-soft">
-          <Fingerprint className="h-5 w-5" />
+    <aside className="hidden w-64 shrink-0 flex-col border-r border-ice-white/14 bg-void-black md:flex">
+      {/* Brand mark — Atlantic geometric glyph + wordmark */}
+      <div className="flex h-[72px] items-center gap-3 border-b border-ice-white/14 px-5">
+        <div className="relative flex h-9 w-9 items-center justify-center border border-ice-white/40">
+          <div className="absolute h-2 w-2 bg-electric-cobalt" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-body-sm font-bold leading-none tracking-tight text-navy dark:text-white">
+          <div className="truncate text-body-sm tracking-[-0.01em] text-ice-white">
             {t("app.title")}
           </div>
-          <div className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-steel">
-            v0.7 · dev
+          <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
+            v0.7 — dev
           </div>
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
+      <nav className="flex-1 overflow-y-auto px-3 py-6">
+        <div className="mb-4 px-3 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
+          / index
+        </div>
         <ul className="space-y-0.5">
           {nav.map((item, i) => (
             <li
@@ -64,23 +67,24 @@ export function Sidebar() {
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    "group relative flex items-center gap-3 rounded-inputs px-3 py-2 text-caption transition-all duration-150",
+                    "group relative flex items-center gap-3 rounded-inputs px-3 py-2 font-mono text-[11px] uppercase tracking-[0.12em] transition-all duration-150",
                     isActive
-                      ? "bg-fog font-semibold text-navy dark:bg-signal/15 dark:text-white"
-                      : "text-slate2 hover:bg-fog/60 hover:text-navy dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100",
+                      ? "bg-slate/60 text-ice-white"
+                      : "text-ice-white/60 hover:bg-slate/40 hover:text-ice-white",
                   )
                 }
               >
                 {({ isActive }) => (
                   <>
                     {isActive && (
-                      <span className="absolute left-0 top-1.5 h-[calc(100%-12px)] w-0.5 rounded-r bg-signal animate-fade-in" />
+                      <span className="absolute left-0 top-1/2 h-1.5 w-1.5 -translate-x-[5px] -translate-y-1/2 rounded-full bg-electric-cobalt animate-fade-in" />
                     )}
                     <item.icon
                       className={cn(
-                        "h-4 w-4 shrink-0 transition-colors",
-                        isActive ? "text-signal" : "text-steel group-hover:text-slate2",
+                        "h-3.5 w-3.5 shrink-0 transition-colors",
+                        isActive ? "text-electric-cobalt" : "text-ice-white/40 group-hover:text-ice-white/70",
                       )}
+                      strokeWidth={1.5}
                     />
                     {t(item.labelKey)}
                   </>
@@ -91,8 +95,8 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <div className="border-t border-mist-border p-4 text-micro text-steel dark:border-slate-800">
-        © 2026 ANT Access
+      <div className="border-t border-ice-white/14 p-4 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
+        © 2026 — ANT ACCESS
       </div>
     </aside>
   );

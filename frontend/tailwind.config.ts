@@ -1,117 +1,150 @@
 import type { Config } from "tailwindcss";
 
+/**
+ * Atlantic.vc — Midnight observatory wireframe.
+ * Existing token names (navy/signal/mist/fog/paper/mist-border/slate2/steel/carbon)
+ * are REMAPPED to the Atlantic dark palette so every page picks up the new theme
+ * without rewriting class names. Semantic mapping:
+ *   paper       → #0d0d0f  (carbon — card surface)
+ *   mist        → #000000  (void — page canvas)
+ *   fog         → #2b2f33  (slate — soft fill / hover)
+ *   mist-border → #d8eaff20 (ice-white hairline at ~12% — used as border)
+ *   navy        → #d8eaff  (ice-white — primary text / headings)
+ *   signal      → #1f58f2  (electric cobalt — accent)
+ *   slate2      → #6c757f  (fog — secondary text)
+ *   steel       → #41464c  (iron — tertiary / muted)
+ *   carbon      → #d8eaff  (body text)
+ */
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   darkMode: "class",
   theme: {
     extend: {
       colors: {
-        // === Calendly-вдохновлённая палитра ===
+        // Atlantic native tokens
+        "ice-white": "#d8eaff",
+        "void-black": "#000000",
+        graphite: "#232529",
+        slate: "#2b2f33",
+        iron: "#41464c",
+        "iron-edge": "#565657",
+        "electric-cobalt": "#1f58f2",
+        "signal-orange": "#ff4105",
+
+        // === Remapped legacy tokens — Atlantic values ===
         navy: {
-          DEFAULT: "#0b3558", // Midnight Navy — заголовки, бренд-голос
-          dark: "#072543",
+          DEFAULT: "#d8eaff", // ice-white as primary text
+          dark: "#ffffff",
         },
         signal: {
-          DEFAULT: "#006bff", // Signal Blue — единственный функциональный акцент
-          dark: "#0058d6",
-          50: "#e6f0ff",
-          100: "#cce0ff",
-          200: "#99c2ff",
-          300: "#66a3ff",
-          400: "#3385ff",
-          500: "#006bff",
-          600: "#0058d6",
-          700: "#0044a3",
-          800: "#003070",
-          900: "#001c40",
+          DEFAULT: "#1f58f2", // electric cobalt
+          dark: "#1847c4",
+          50: "#e8efff",
+          100: "#cfd9ff",
+          200: "#9fb4ff",
+          300: "#6e8eff",
+          400: "#3e69ff",
+          500: "#1f58f2",
+          600: "#1847c4",
+          700: "#103596",
+          800: "#0a2369",
+          900: "#04123d",
         },
-        slate2: "#476788", // Slate Blue — secondary body text
-        carbon: "#0a0a0a", // Primary body text
-        paper: "#ffffff",
-        mist: "#f8f9fb", // Canvas
-        fog: "#e7edf6", // Soft fill
-        "mist-border": "#d4e0ed", // Hairline borders
-        silver: "#e6e6e6",
-        steel: "#a6bbd1", // Muted placeholder
-        info: "#004eba", // Info Blue
-        // Декоративные (только для блобов, НЕ для UI)
-        magenta: "#e55cff",
-        ultraviolet: "#8247f5",
-        amber: "#ffa600",
-        cyan: "#0099ff",
+        slate2: "#6c757f", // fog — secondary body text
+        carbon: "#d8eaff", // body text (was #0a0a0a) → ice-white on dark
+        paper: "#0d0d0f", // carbon surface
+        mist: "#000000", // void canvas
+        fog: "#2b2f33", // slate — soft fill / hover
+        "mist-border": "rgba(216, 234, 255, 0.14)", // ice-white hairline
+        silver: "#232529",
+        steel: "#41464c", // iron — muted
 
-        // === Совместимость со старым кодом ===
+        // Atlantic accents — used only as borders/decoration, never fill
+        magenta: "#ff4105", // remapped → signal-orange so old blobs match thermal palette
+        ultraviolet: "#1f58f2",
+        amber: "#ff4105",
+        cyan: "#1f58f2",
+
+        // legacy compat
         brand: {
-          50: "#e6f0ff",
-          100: "#cce0ff",
-          200: "#99c2ff",
-          300: "#66a3ff",
-          400: "#3385ff",
-          500: "#006bff",
-          DEFAULT: "#006bff",
-          600: "#0058d6",
-          700: "#0044a3",
-          800: "#003070",
-          900: "#001c40",
-          dark: "#0058d6",
+          50: "#e8efff",
+          100: "#cfd9ff",
+          200: "#9fb4ff",
+          300: "#6e8eff",
+          400: "#3e69ff",
+          500: "#1f58f2",
+          DEFAULT: "#1f58f2",
+          600: "#1847c4",
+          700: "#103596",
+          800: "#0a2369",
+          900: "#04123d",
+          dark: "#1847c4",
         },
         status: {
-          online: "#10b981",
-          offline: "#ef4444",
-          warning: "#f59e0b",
-          late: "#f97316",
+          online: "#1f58f2",
+          offline: "#ff4105",
+          warning: "#ff4105",
+          late: "#ff4105",
         },
       },
       fontFamily: {
+        // Monument substitute: Space Grotesk (geometric sans, single-weight feel)
         sans: [
-          "Manrope",
+          "Space Grotesk",
+          "Inter",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",
-          "BlinkMacSystemFont",
-          "Segoe UI",
-          "Roboto",
+          "sans-serif",
+        ],
+        mono: [
+          "JetBrains Mono",
+          "IBM Plex Mono",
+          "ui-monospace",
+          "SFMono-Regular",
+          "Menlo",
+          "monospace",
+        ],
+        display: [
+          "Space Grotesk",
+          "Inter",
+          "ui-sans-serif",
+          "system-ui",
           "sans-serif",
         ],
       },
       fontSize: {
-        micro: ["12px", { lineHeight: "1.5" }],
-        caption: ["14px", { lineHeight: "1.5" }],
-        "body-sm": ["16px", { lineHeight: "1.6" }],
-        body: ["18px", { lineHeight: "1.64" }],
-        "body-lg": ["20px", { lineHeight: "1.6" }],
-        subheading: ["24px", { lineHeight: "1.4" }],
-        "heading-sm": ["28px", { lineHeight: "1.4" }],
-        heading: ["38px", { lineHeight: "1.21" }],
-        "heading-lg": ["50px", { lineHeight: "1.2" }],
-        display: ["68px", { lineHeight: "1.1" }],
+        // Mono micro-labels — scientific instrument tracking
+        micro: ["10px", { lineHeight: "1", letterSpacing: "0.16em" }],
+        caption: ["12px", { lineHeight: "1.5", letterSpacing: "0.06em" }],
+        // Body
+        "body-sm": ["14px", { lineHeight: "1.5", letterSpacing: "0.01em" }],
+        body: ["16px", { lineHeight: "1.5" }],
+        "body-lg": ["18px", { lineHeight: "1.5" }],
+        // Display scale — Monument philosophy: command by size, never bold
+        subheading: ["20px", { lineHeight: "1.3", letterSpacing: "-0.01em" }],
+        "heading-sm": ["24px", { lineHeight: "1.24", letterSpacing: "-0.01em" }],
+        heading: ["48px", { lineHeight: "1.06", letterSpacing: "-0.02em" }],
+        "heading-lg": ["64px", { lineHeight: "1.06", letterSpacing: "-0.02em" }],
+        display: ["96px", { lineHeight: "1.0", letterSpacing: "-0.03em" }],
       },
       borderRadius: {
-        cards: "8px",
-        inputs: "4px",
-        buttons: "4px",
-        mockups: "16px",
-        badges: "50px",
+        // Atlantic radii: 8 tags/buttons, 16 cards, 24 large
+        cards: "16px",
+        inputs: "8px",
+        buttons: "8px",
+        mockups: "24px",
+        badges: "8px",
+        pills: "40.798px",
       },
       boxShadow: {
-        // Все тени голубоватые (rgba(71,103,136,...)) — фирменная подпись
-        soft:
-          "rgba(71, 103, 136, 0.04) 0px 4px 5px 0px, " +
-          "rgba(71, 103, 136, 0.03) 0px 4px 10px 0px, " +
-          "rgba(71, 103, 136, 0.05) 0px 10px 20px 0px",
-        card:
-          "rgba(71, 103, 136, 0.04) 0px 4px 5px 0px, " +
-          "rgba(71, 103, 136, 0.03) 0px 4px 10px 0px, " +
-          "rgba(71, 103, 136, 0.05) 0px 10px 20px 0px",
-        elevated:
-          "rgba(71, 103, 136, 0.04) 0px 4px 5px 0px, " +
-          "rgba(71, 103, 136, 0.03) 0px 8px 15px 0px, " +
-          "rgba(71, 103, 136, 0.08) 0px 30px 50px 0px",
-        button:
-          "rgba(71, 103, 136, 0.04) 0px 4px 5px 0px, " +
-          "rgba(71, 103, 136, 0.03) 0px 8px 15px 0px, " +
-          "rgba(71, 103, 136, 0.06) 0px 15px 30px 0px",
-        glow: "0 0 0 4px rgba(0, 107, 255, 0.15)",
+        // No shadows in Atlantic — depth from stepped surfaces. Keep tokens as
+        // no-ops for backwards-compat with components that still reference them.
+        soft: "none",
+        card: "none",
+        elevated: "none",
+        button: "none",
+        glow: "0 0 0 1px rgba(31, 88, 242, 0.4)",
       },
       animation: {
         "fade-in": "fade-in 0.3s ease-out",
@@ -119,11 +152,12 @@ export default {
         "slide-down": "slide-down 0.35s cubic-bezier(0.22, 1, 0.36, 1)",
         "slide-right": "slide-right 0.35s cubic-bezier(0.22, 1, 0.36, 1)",
         "scale-in": "scale-in 0.25s cubic-bezier(0.22, 1, 0.36, 1)",
-        float: "float 8s ease-in-out infinite",
-        "float-delayed": "float 8s ease-in-out 3s infinite",
+        float: "float 14s ease-in-out infinite",
+        "float-delayed": "float 14s ease-in-out 5s infinite",
         shimmer: "shimmer 2.5s linear infinite",
         "pulse-soft": "pulse-soft 2.5s ease-in-out infinite",
         "bar-grow": "bar-grow 0.8s cubic-bezier(0.22, 1, 0.36, 1) both",
+        twinkle: "twinkle 4s ease-in-out infinite",
       },
       keyframes: {
         "fade-in": { "0%": { opacity: "0" }, "100%": { opacity: "1" } },
@@ -144,9 +178,9 @@ export default {
           "100%": { opacity: "1", transform: "scale(1)" },
         },
         float: {
-          "0%, 100%": { transform: "translateY(0) translateX(0)" },
-          "33%": { transform: "translateY(-30px) translateX(15px)" },
-          "66%": { transform: "translateY(15px) translateX(-20px)" },
+          "0%, 100%": { transform: "translate3d(0,0,0)" },
+          "33%": { transform: "translate3d(40px,-30px,0)" },
+          "66%": { transform: "translate3d(-30px,20px,0)" },
         },
         shimmer: {
           "0%": { backgroundPosition: "-200% 0" },
@@ -157,6 +191,10 @@ export default {
           "50%": { opacity: "0.6" },
         },
         "bar-grow": { "0%": { height: "0%" } },
+        twinkle: {
+          "0%, 100%": { opacity: "0.3", transform: "scale(0.9) rotate(0deg)" },
+          "50%": { opacity: "1", transform: "scale(1) rotate(15deg)" },
+        },
       },
     },
   },

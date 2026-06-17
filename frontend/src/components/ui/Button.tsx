@@ -7,39 +7,35 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 /**
- * Calendly-style:
- * - Primary: filled signal-blue, 4px radius, blue-tinted shadow
- * - Secondary: white surface + 1px mist-border, navy text
- * - Ghost: transparent + navy text (inline nav action)
- * - Все радиусы 4px, padding 8px 24px
+ * Atlantic.vc — outlined-not-filled CTAs. No solid filled buttons.
+ * Primary  : transparent + 1px signal-orange border, orange label
+ * Secondary: transparent + 1px ice-white border, ice-white label
+ * Ghost    : transparent, ice-white label (inline)
+ * Danger   : transparent + 1px signal-orange border (orange itself = warning hue)
  */
 export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
   { variant = "primary", size = "md", className, ...rest },
   ref,
 ) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-buttons font-semibold " +
-    "transition-all duration-150 active:scale-[0.98] " +
-    "disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100";
+    "inline-flex items-center justify-center gap-2 rounded-buttons font-mono uppercase " +
+    "tracking-[0.12em] transition-all duration-150 " +
+    "border bg-transparent " +
+    "active:scale-[0.98] " +
+    "disabled:opacity-40 disabled:pointer-events-none disabled:active:scale-100";
   const sizes = {
-    sm: "h-8 px-3 text-xs",
-    md: "h-10 px-6 text-sm",
+    sm: "h-8 px-3 text-[10px]",
+    md: "h-10 px-6 text-[12px]",
   };
   const variants = {
     primary:
-      "bg-signal text-white shadow-button hover:bg-signal-dark " +
-      "focus-visible:ring-signal/40",
+      "border-signal-orange text-signal-orange hover:bg-signal-orange/10",
     secondary:
-      "border border-mist-border bg-paper text-navy " +
-      "hover:border-steel hover:bg-fog " +
-      "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 " +
-      "dark:hover:border-slate-600 dark:hover:bg-slate-700",
+      "border-ice-white/30 text-ice-white hover:border-ice-white/60 hover:bg-ice-white/5",
     danger:
-      "bg-red-600 text-white shadow-button hover:bg-red-700 " +
-      "focus-visible:ring-red-500/40",
+      "border-signal-orange text-signal-orange hover:bg-signal-orange/15",
     ghost:
-      "text-navy hover:bg-fog hover:text-navy-dark " +
-      "dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100",
+      "border-transparent text-ice-white hover:bg-ice-white/5",
   };
   return (
     <button
