@@ -161,9 +161,13 @@ export default function DevicesPage() {
         }
       />
 
-      {isLoading && <div className="py-10 text-center text-slate-400">Загрузка…</div>}
+      {isLoading && (
+        <div className="py-10 text-center font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
+          Загрузка…
+        </div>
+      )}
       {!isLoading && (data?.items.length ?? 0) === 0 && (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center text-slate-400 dark:border-slate-700 dark:bg-slate-900">
+        <div className="rounded-cards border border-dashed border-ice-white/14 bg-carbon py-16 text-center font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
           Устройств пока нет. Нажмите «Добавить устройство».
         </div>
       )}
@@ -172,49 +176,53 @@ export default function DevicesPage() {
         {data?.items.map((d) => (
           <div
             key={d.id}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+            className="rounded-cards border border-ice-white/14 bg-carbon p-6 transition-colors hover:border-ice-white/30"
           >
-            <div className="mb-3 flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand/10 text-brand">
-                  <Cpu className="h-5 w-5" />
+            <div className="mb-5 flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-ice-white/30">
+                  <Cpu className="h-4 w-4 text-electric-cobalt" strokeWidth={1.5} />
                 </div>
-                <div>
-                  <div className="font-semibold">{d.name}</div>
-                  <div className="text-xs text-slate-500">
+                <div className="min-w-0">
+                  <div className="truncate text-body-sm tracking-[-0.01em] text-ice-white">
+                    {d.name}
+                  </div>
+                  <div className="mt-1 truncate font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
                     {PURPOSE_LABEL[d.purpose] ?? d.purpose}
                     {d.branch_id && ` · ${branchMap.get(d.branch_id) ?? ""}`}
                   </div>
                 </div>
               </div>
               {d.online ? (
-                <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">
-                  <Wifi className="h-3 w-3" /> online
+                <span className="flex shrink-0 items-center gap-1.5 border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-emerald-400">
+                  <Wifi className="h-3 w-3" strokeWidth={1.5} /> online
                 </span>
               ) : (
-                <span className="flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                  <WifiOff className="h-3 w-3" /> offline
+                <span className="flex shrink-0 items-center gap-1.5 border border-ice-white/20 bg-slate/40 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-fog-text">
+                  <WifiOff className="h-3 w-3" strokeWidth={1.5} /> offline
                 </span>
               )}
             </div>
 
-            <div className="mb-3 grid grid-cols-2 gap-y-1 text-xs text-slate-500">
-              <span>Адрес</span>
-              <span className="text-right font-mono text-slate-700 dark:text-slate-300">
-                {d.ip}:{d.port}
-              </span>
-              <span>Серийный</span>
-              <span className="text-right font-mono text-slate-700 dark:text-slate-300">
-                {d.serial_number ?? "—"}
-              </span>
-              <span>Прошивка</span>
-              <span className="text-right font-mono text-slate-700 dark:text-slate-300">
-                {d.firmware ?? "—"}
-              </span>
-            </div>
+            <dl className="mb-5 space-y-1.5 font-mono text-[10px] uppercase tracking-[0.12em]">
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-fog-text">Адрес</dt>
+                <dd className="truncate text-ice-white/90">{d.ip}:{d.port}</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="shrink-0 text-fog-text">Серийный</dt>
+                <dd className="truncate text-right text-ice-white/90" title={d.serial_number ?? ""}>
+                  {d.serial_number ?? "—"}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-fog-text">Прошивка</dt>
+                <dd className="text-ice-white/90">{d.firmware ?? "—"}</dd>
+              </div>
+            </dl>
 
             {testResult[d.id] && (
-              <div className="mb-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:bg-slate-800/60 dark:text-slate-400">
+              <div className="mb-4 border-l-2 border-electric-cobalt bg-electric-cobalt/5 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.08em] text-ice-white/80">
                 {testResult[d.id]}
               </div>
             )}
@@ -335,7 +343,7 @@ export default function DevicesPage() {
             <select
               value={form.purpose ?? "entry"}
               onChange={(e) => setForm({ ...form, purpose: e.target.value })}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+              className="w-full rounded-inputs border border-ice-white/14 bg-carbon/60 px-3 py-2 text-body-sm text-ice-white outline-none hover:border-ice-white/30 focus:border-electric-cobalt"
             >
               {Object.entries(PURPOSE_LABEL).map(([k, v]) => (
                 <option key={k} value={k}>{v}</option>
@@ -346,7 +354,7 @@ export default function DevicesPage() {
             <select
               value={form.branch_id ?? ""}
               onChange={(e) => setForm({ ...form, branch_id: e.target.value || null })}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+              className="w-full rounded-inputs border border-ice-white/14 bg-carbon/60 px-3 py-2 text-body-sm text-ice-white outline-none hover:border-ice-white/30 focus:border-electric-cobalt"
             >
               <option value="">— не привязано —</option>
               {branches.data?.items.map((b) => (
@@ -358,7 +366,7 @@ export default function DevicesPage() {
             <select
               value={form.timezone_offset ?? 5}
               onChange={(e) => setForm({ ...form, timezone_offset: Number(e.target.value) })}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+              className="w-full rounded-inputs border border-ice-white/14 bg-carbon/60 px-3 py-2 text-body-sm text-ice-white outline-none hover:border-ice-white/30 focus:border-electric-cobalt"
             >
               {TIMEZONES.map((tz) => (
                 <option key={tz.value} value={tz.value}>{tz.label}</option>
@@ -369,7 +377,7 @@ export default function DevicesPage() {
             <select
               value={form.type ?? "multi"}
               onChange={(e) => setForm({ ...form, type: e.target.value })}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+              className="w-full rounded-inputs border border-ice-white/14 bg-carbon/60 px-3 py-2 text-body-sm text-ice-white outline-none hover:border-ice-white/30 focus:border-electric-cobalt"
             >
               <option value="multi">Комбинированное (лицо + отпечаток + карта)</option>
               <option value="face">Распознавание лиц</option>
