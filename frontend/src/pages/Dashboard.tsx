@@ -5,42 +5,12 @@ import { dashboardApi } from "@/api/dashboard";
 import { useCountUp } from "@/lib/hooks";
 
 const KPI_DEFS = [
-  {
-    key: "total_employees",
-    label: "Сотрудников",
-    icon: Users,
-    iconBg: "bg-signal/10 text-signal",
-  },
-  {
-    key: "online_devices",
-    label: "Устройств онлайн",
-    icon: Wifi,
-    iconBg: "bg-emerald-100 text-emerald-600",
-  },
-  {
-    key: "total_devices",
-    label: "Устройств всего",
-    icon: Cpu,
-    iconBg: "bg-fog text-navy",
-  },
-  {
-    key: "came_today",
-    label: "Пришли сегодня",
-    icon: ClipboardCheck,
-    iconBg: "bg-emerald-100 text-emerald-600",
-  },
-  {
-    key: "late_today",
-    label: "Опоздали",
-    icon: Clock,
-    iconBg: "bg-orange-100 text-orange-600",
-  },
-  {
-    key: "absent_today",
-    label: "Не пришли",
-    icon: UserX,
-    iconBg: "bg-red-100 text-red-600",
-  },
+  { key: "total_employees", code: "01", label: "EMPLOYEES", icon: Users },
+  { key: "online_devices", code: "02", label: "DEVICES · ONLINE", icon: Wifi },
+  { key: "total_devices", code: "03", label: "DEVICES · TOTAL", icon: Cpu },
+  { key: "came_today", code: "04", label: "ARRIVED TODAY", icon: ClipboardCheck },
+  { key: "late_today", code: "05", label: "LATE", icon: Clock },
+  { key: "absent_today", code: "06", label: "ABSENT", icon: UserX },
 ] as const;
 
 function KpiCard({
@@ -56,22 +26,32 @@ function KpiCard({
   return (
     <div
       style={{ animationDelay: `${index * 60}ms` }}
-      className="group rounded-cards border border-mist-border bg-paper p-6 shadow-soft opacity-0 animate-slide-up [animation-fill-mode:forwards] transition-shadow duration-200 hover:shadow-card dark:border-slate-800 dark:bg-slate-900"
+      className="group rounded-cards border border-ice-white/14 bg-carbon p-6 opacity-0 animate-slide-up [animation-fill-mode:forwards] transition-colors duration-200 hover:border-ice-white/30"
     >
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-caption font-medium text-slate2 dark:text-slate-400">{def.label}</div>
-          <div className="mt-3 text-heading-sm font-bold tracking-tight tabular-nums text-navy dark:text-white">
-            {animated.toLocaleString("ru-RU")}
-          </div>
-        </div>
-        <div
-          className={`flex h-12 w-12 items-center justify-center rounded-cards transition-transform duration-200 group-hover:scale-105 ${def.iconBg}`}
-        >
-          <def.icon className="h-5 w-5" />
-        </div>
+      <div className="flex items-start justify-between">
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-electric-cobalt">
+          /{def.code}
+        </span>
+        <def.icon className="h-3.5 w-3.5 text-ice-white/30" strokeWidth={1.5} />
+      </div>
+      <div className="mt-8 text-[48px] leading-[1] tracking-[-0.03em] tabular-nums text-ice-white">
+        {animated.toLocaleString("ru-RU")}
+      </div>
+      <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
+        {def.label}
       </div>
     </div>
+  );
+}
+
+function Sparkle({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 40 40" className={className} fill="none" stroke="#1f58f2" strokeWidth="1.5" strokeLinecap="round">
+      <path d="M20 4 V36" />
+      <path d="M4 20 H36" />
+      <path d="M8 8 L32 32" />
+      <path d="M32 8 L8 32" />
+    </svg>
   );
 }
 
@@ -84,71 +64,91 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-16 animate-fade-in">
+      {/* Editorial hero */}
       <div className="animate-slide-down">
-        <h1 className="text-heading tracking-tight">Дашборд</h1>
-        <p className="mt-2 text-body-sm text-slate2 dark:text-slate-400">
-          Сводная статистика системы
+        <div className="mb-4 flex items-center gap-3">
+          <Sparkle className="h-7 w-7 animate-twinkle" />
+          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-electric-cobalt">
+            / observatory · live
+          </span>
+        </div>
+        <h1 className="text-[64px] leading-[1.04] tracking-[-0.03em] text-ice-white">
+          dashboard <span className="text-electric-cobalt">overview</span>.
+        </h1>
+        <p className="mt-5 max-w-xl font-mono text-[12px] leading-[1.8] tracking-[0.06em] text-fog-text">
+          real-time signal from the access network — devices, people, events.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-6 lg:grid-cols-3 xl:grid-cols-6">
-        {KPI_DEFS.map((k, i) => (
-          <KpiCard
-            key={k.key}
-            def={k}
-            value={data?.kpis[k.key] ?? 0}
-            index={i}
-          />
-        ))}
+      {/* KPI grid */}
+      <div>
+        <div className="mb-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-ice-white/14" />
+          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
+            kpis — 06 metrics
+          </span>
+          <div className="h-px flex-1 bg-ice-white/14" />
+        </div>
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+          {KPI_DEFS.map((k, i) => (
+            <KpiCard key={k.key} def={k} value={data?.kpis[k.key] ?? 0} index={i} />
+          ))}
+        </div>
       </div>
 
+      {/* Chart + events */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div
-          className="rounded-cards border border-mist-border bg-paper p-6 shadow-soft opacity-0 animate-slide-up [animation-fill-mode:forwards] dark:border-slate-800 dark:bg-slate-900 lg:col-span-2"
+          className="rounded-cards border border-ice-white/14 bg-carbon p-8 opacity-0 animate-slide-up [animation-fill-mode:forwards] lg:col-span-2"
           style={{ animationDelay: "400ms" }}
         >
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-subheading font-bold tracking-tight">
-              Посещаемость за неделю
-            </h2>
-            <div className="flex gap-4 text-micro text-slate2">
-              <span className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm bg-signal" /> Пришли
+          <div className="mb-8 flex items-end justify-between">
+            <div>
+              <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-electric-cobalt">
+                / weekly
+              </div>
+              <h2 className="text-heading-sm tracking-[-0.02em] text-ice-white">
+                attendance signal
+              </h2>
+            </div>
+            <div className="flex gap-5 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
+              <span className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-electric-cobalt" /> arrived
               </span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm bg-amber" /> Опоздания
+              <span className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-signal-orange" /> late
               </span>
             </div>
           </div>
           {(!data || data.weekly.length === 0) && (
-            <div className="flex h-56 items-center justify-center rounded-cards border border-dashed border-mist-border bg-mist text-body-sm text-steel dark:border-slate-800 dark:bg-slate-800/30">
-              Нет данных — запустите пересчёт табеля в разделе «Приход/уход»
+            <div className="flex h-56 items-center justify-center rounded-inputs border border-dashed border-ice-white/14 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
+              no data — run attendance recalculation
             </div>
           )}
           {data && data.weekly.length > 0 && (
             <div className="flex h-56 items-end justify-around gap-3">
               {data.weekly.map((w, i) => (
-                <div key={w.date} className="flex flex-1 flex-col items-center gap-2">
+                <div key={w.date} className="flex flex-1 flex-col items-center gap-3">
                   <div className="flex w-full flex-1 items-end justify-center gap-1.5">
                     <div
-                      className="w-4 origin-bottom rounded-t-sm bg-signal transition-all duration-200 hover:bg-signal-dark animate-bar-grow"
+                      className="w-3 origin-bottom bg-electric-cobalt transition-all duration-200 animate-bar-grow"
                       style={{
                         height: `${(w.came / weeklyMax) * 100}%`,
                         animationDelay: `${500 + i * 60}ms`,
                       }}
-                      title={`Пришли: ${w.came}`}
+                      title={`arrived: ${w.came}`}
                     />
                     <div
-                      className="w-4 origin-bottom rounded-t-sm bg-amber transition-all duration-200 hover:opacity-80 animate-bar-grow"
+                      className="w-3 origin-bottom bg-signal-orange transition-all duration-200 animate-bar-grow"
                       style={{
                         height: `${(w.late / weeklyMax) * 100}%`,
                         animationDelay: `${500 + i * 60 + 30}ms`,
                       }}
-                      title={`Опоздали: ${w.late}`}
+                      title={`late: ${w.late}`}
                     />
                   </div>
-                  <div className="text-micro font-medium text-slate2">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fog-text">
                     {new Date(w.date).toLocaleDateString("ru-RU", {
                       day: "2-digit",
                       month: "2-digit",
@@ -161,13 +161,20 @@ export default function DashboardPage() {
         </div>
 
         <div
-          className="rounded-cards border border-mist-border bg-paper p-6 shadow-soft opacity-0 animate-slide-up [animation-fill-mode:forwards] dark:border-slate-800 dark:bg-slate-900"
+          className="rounded-cards border border-ice-white/14 bg-carbon p-8 opacity-0 animate-slide-up [animation-fill-mode:forwards]"
           style={{ animationDelay: "500ms" }}
         >
-          <h2 className="mb-6 text-subheading font-bold tracking-tight">Последние события</h2>
+          <div className="mb-6">
+            <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-electric-cobalt">
+              / stream
+            </div>
+            <h2 className="text-heading-sm tracking-[-0.02em] text-ice-white">
+              recent events
+            </h2>
+          </div>
           {(!data || data.recent_events.length === 0) && (
-            <div className="flex h-56 items-center justify-center rounded-cards border border-dashed border-mist-border bg-mist text-body-sm text-steel dark:border-slate-800 dark:bg-slate-800/30">
-              Пока пусто
+            <div className="flex h-56 items-center justify-center rounded-inputs border border-dashed border-ice-white/14 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
+              empty
             </div>
           )}
           {data && data.recent_events.length > 0 && (
@@ -176,21 +183,21 @@ export default function DashboardPage() {
                 <li
                   key={e.id}
                   style={{ animationDelay: `${600 + i * 50}ms` }}
-                  className="flex items-center justify-between rounded-inputs border border-mist-border bg-paper px-4 py-3 text-body-sm opacity-0 animate-slide-right [animation-fill-mode:forwards] transition-all duration-150 hover:border-steel hover:bg-fog dark:border-slate-800 dark:bg-slate-800/40 dark:hover:bg-slate-800/70"
+                  className="flex items-center justify-between border-b border-ice-white/8 py-3 opacity-0 animate-slide-right [animation-fill-mode:forwards] transition-colors duration-150 hover:border-electric-cobalt/50"
                 >
                   <div>
-                    <div className="font-semibold text-navy dark:text-white">
+                    <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-ice-white">
                       {e.event_type === "entry"
-                        ? "Вход"
+                        ? "→ ENTRY"
                         : e.event_type === "exit"
-                          ? "Выход"
-                          : e.event_type}
+                          ? "← EXIT"
+                          : e.event_type.toUpperCase()}
                     </div>
-                    <div className="text-micro text-slate2">
-                      ID {e.employee_id?.slice(0, 8) ?? "—"}
+                    <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-fog-text">
+                      id {e.employee_id?.slice(0, 8) ?? "—"}
                     </div>
                   </div>
-                  <div className="font-mono text-micro text-slate2">
+                  <div className="font-mono text-[10px] tracking-[0.06em] text-electric-cobalt">
                     {new Date(e.event_time).toLocaleTimeString("ru-RU")}
                   </div>
                 </li>

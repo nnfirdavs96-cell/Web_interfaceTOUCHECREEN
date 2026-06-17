@@ -1,5 +1,5 @@
-import { Globe, LogOut, Moon, Search, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Globe, LogOut, Search } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "@/api/auth";
@@ -11,12 +11,7 @@ export function Topbar() {
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const [langOpen, setLangOpen] = useState(false);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-  }, [dark]);
 
   async function handleLogout() {
     try {
@@ -31,28 +26,28 @@ export function Topbar() {
   const currentLang = LANGS.find((l) => l.code === i18n.resolvedLanguage) ?? LANGS[0];
 
   return (
-    <header className="sticky top-0 z-20 flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-mist-border bg-paper/90 px-6 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/85">
+    <header className="sticky top-0 z-20 flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-ice-white/14 bg-void-black/90 px-6 backdrop-blur-md">
       <div className="relative max-w-md flex-1">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-steel" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ice-white/40" strokeWidth={1.5} />
         <input
           placeholder={t("app.search")}
-          className="w-full rounded-inputs border border-mist-border bg-mist py-2 pl-9 pr-3 text-body-sm outline-none transition-all duration-150 placeholder:text-steel hover:border-steel focus:border-signal focus:bg-paper focus:ring-2 focus:ring-signal/20 dark:border-slate-700 dark:bg-slate-800/60 dark:hover:border-slate-600 dark:focus:bg-slate-800"
+          className="w-full rounded-inputs border border-ice-white/14 bg-carbon/40 py-2 pl-9 pr-3 font-mono text-[12px] tracking-[0.06em] text-ice-white outline-none transition-all duration-150 placeholder:uppercase placeholder:text-fog-text hover:border-ice-white/30 focus:border-electric-cobalt focus:bg-carbon"
         />
       </div>
 
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
         <div className="relative">
           <button
             onClick={() => setLangOpen((o) => !o)}
-            className="flex items-center gap-1.5 rounded-inputs px-2.5 py-2 text-caption text-slate2 transition-colors hover:bg-fog hover:text-navy dark:text-slate-300 dark:hover:bg-slate-800"
+            className="flex items-center gap-1.5 rounded-inputs border border-transparent px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-ice-white/70 transition-colors hover:border-ice-white/20 hover:text-ice-white"
             aria-label="Language"
           >
-            <Globe className="h-4 w-4" />
-            <span className="text-micro font-semibold uppercase">{currentLang.code}</span>
+            <Globe className="h-3.5 w-3.5" strokeWidth={1.5} />
+            <span>{currentLang.code}</span>
           </button>
           {langOpen && (
             <div
-              className="absolute right-0 top-full z-50 mt-1.5 w-44 overflow-hidden rounded-cards border border-mist-border bg-paper shadow-elevated dark:border-slate-700 dark:bg-slate-900 animate-slide-up"
+              className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-inputs border border-ice-white/14 bg-carbon animate-slide-up"
               onMouseLeave={() => setLangOpen(false)}
             >
               {LANGS.map((l) => (
@@ -62,10 +57,10 @@ export function Topbar() {
                     void i18n.changeLanguage(l.code);
                     setLangOpen(false);
                   }}
-                  className={`block w-full px-3 py-2 text-left text-body-sm transition-colors hover:bg-fog dark:hover:bg-slate-800 ${
+                  className={`block w-full px-3 py-2 text-left font-mono text-[10px] uppercase tracking-[0.16em] transition-colors hover:bg-slate/60 ${
                     l.code === currentLang.code
-                      ? "font-semibold text-signal bg-signal/5 dark:bg-signal/10"
-                      : "text-navy dark:text-slate-300"
+                      ? "text-electric-cobalt"
+                      : "text-ice-white/70"
                   }`}
                 >
                   {l.name}
@@ -75,30 +70,24 @@ export function Topbar() {
           )}
         </div>
 
-        <button
-          onClick={() => setDark((d) => !d)}
-          className="rounded-inputs p-2 text-slate2 transition-colors hover:bg-fog hover:text-navy dark:hover:bg-slate-800 dark:hover:text-slate-300"
-          aria-label="Toggle theme"
-        >
-          {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </button>
-
-        <div className="ml-2 flex items-center gap-3 border-l border-mist-border pl-3 dark:border-slate-800">
+        <div className="ml-2 flex items-center gap-3 border-l border-ice-white/14 pl-4">
           <div className="text-right">
-            <div className="text-caption font-semibold leading-tight text-navy dark:text-white">
+            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ice-white">
               {user?.full_name}
             </div>
-            <div className="text-micro text-slate2 dark:text-slate-400">{user?.role}</div>
+            <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-fog-text">
+              {user?.role}
+            </div>
           </div>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-signal text-caption font-bold text-white shadow-soft">
+          <div className="flex h-9 w-9 items-center justify-center border border-ice-white/40 font-mono text-[12px] tracking-[0.06em] text-ice-white">
             {user?.full_name?.[0] ?? "U"}
           </div>
           <button
             onClick={handleLogout}
-            className="rounded-inputs p-2 text-slate2 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50"
+            className="rounded-inputs border border-transparent p-2 text-ice-white/60 transition-colors hover:border-signal-orange/40 hover:text-signal-orange"
             aria-label="Logout"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
           </button>
         </div>
       </div>

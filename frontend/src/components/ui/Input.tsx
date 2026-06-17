@@ -1,15 +1,14 @@
 import { forwardRef, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
+// Atlantic: transparent surface, 1px ice-white hairline, electric-cobalt focus.
 const baseField =
-  "w-full rounded-inputs border border-mist-border bg-paper px-3 py-2 text-body-sm " +
-  "outline-none transition-all duration-150 " +
-  "placeholder:text-steel " +
-  "hover:border-steel " +
-  "focus:border-signal focus:ring-2 focus:ring-signal/20 " +
-  "disabled:bg-fog disabled:text-steel disabled:cursor-not-allowed " +
-  "dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-500 " +
-  "dark:hover:border-slate-600 dark:disabled:bg-slate-900";
+  "w-full rounded-inputs border border-ice-white/15 bg-carbon/40 px-3 py-2 text-body-sm " +
+  "text-ice-white outline-none transition-all duration-150 " +
+  "placeholder:text-fog-text placeholder:font-mono placeholder:text-[12px] " +
+  "hover:border-ice-white/30 " +
+  "focus:border-electric-cobalt focus:bg-carbon " +
+  "disabled:opacity-40 disabled:cursor-not-allowed";
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
   function Input({ className, ...rest }, ref) {
@@ -39,12 +38,12 @@ export function Field({
   return (
     <div>
       {label && (
-        <label className="mb-1.5 block text-caption font-medium text-navy dark:text-slate-300">
-          {label} {required && <span className="text-red-500">*</span>}
+        <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.16em] text-ice-white/70">
+          {label} {required && <span className="text-signal-orange">*</span>}
         </label>
       )}
       {children}
-      {hint && <div className="mt-1 text-micro text-slate2 dark:text-slate-400">{hint}</div>}
+      {hint && <div className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-fog-text">{hint}</div>}
     </div>
   );
 }
