@@ -7,11 +7,16 @@ import "./i18n";
 import "./index.css";
 
 try {
-  if (localStorage.getItem("ant-theme") === "light") {
+  const saved = localStorage.getItem("ant-theme");
+  if (saved === "light") {
     document.documentElement.classList.add("light");
+    document.documentElement.classList.remove("dark");
+  } else {
+    document.documentElement.classList.add("dark");
+    document.documentElement.classList.remove("light");
   }
 } catch {
-  // ignore
+  document.documentElement.classList.add("dark");
 }
 
 const queryClient = new QueryClient({

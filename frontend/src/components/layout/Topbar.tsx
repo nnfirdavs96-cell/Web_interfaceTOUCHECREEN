@@ -18,6 +18,7 @@ export function Topbar() {
 
   useEffect(() => {
     document.documentElement.classList.toggle("light", light);
+    document.documentElement.classList.toggle("dark", !light);
     try { localStorage.setItem("ant-theme", light ? "light" : "dark"); } catch {
       // ignore
     }

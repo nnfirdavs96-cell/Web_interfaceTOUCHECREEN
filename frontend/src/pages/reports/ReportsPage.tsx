@@ -10,12 +10,12 @@ import { DataTable, type Column } from "@/components/ui/DataTable";
 import { PageHeader } from "@/components/ui/PageHeader";
 
 const STATUS_LABEL: Record<string, { text: string; cls: string }> = {
-  normal: { text: "Норма", cls: "bg-emerald-100 text-emerald-700" },
-  late: { text: "Опоздание", cls: "bg-orange-100 text-orange-700" },
-  early_leave: { text: "Ранний уход", cls: "bg-amber-100 text-amber-700" },
-  absent: { text: "Отсутствие", cls: "bg-red-100 text-red-700" },
-  partial: { text: "Неполный день", cls: "bg-sky-100 text-sky-700" },
-  day_off: { text: "Выходной", cls: "bg-slate-200 text-slate-600" },
+  normal: { text: "Норма", cls: "border border-emerald-500/40 bg-emerald-500/10 text-emerald-400" },
+  late: { text: "Опоздание", cls: "border border-signal-orange/40 bg-signal-orange/10 text-signal-orange" },
+  early_leave: { text: "Ранний уход", cls: "border border-amber-500/40 bg-amber-500/10 text-amber-400" },
+  absent: { text: "Отсутствие", cls: "border border-red-500/40 bg-red-500/10 text-red-400" },
+  partial: { text: "Неполный день", cls: "border border-electric-cobalt/40 bg-electric-cobalt/10 text-electric-cobalt" },
+  day_off: { text: "Выходной", cls: "border border-ice-white/14 bg-slate/40 text-ice-white/70" },
 };
 
 function mins(n: number) {
@@ -91,10 +91,10 @@ export default function ReportsPage() {
   const summaryCards = useMemo(() => {
     const by = summary.data?.by_status ?? {};
     return [
-      { key: "total", label: "Всего записей", value: summary.data?.total_rows ?? 0, cls: "bg-brand/10 text-brand" },
-      { key: "normal", label: "Норма", value: by.normal ?? 0, cls: "bg-emerald-100 text-emerald-700" },
-      { key: "late", label: "Опоздания", value: by.late ?? 0, cls: "bg-orange-100 text-orange-700" },
-      { key: "absent", label: "Отсутствия", value: by.absent ?? 0, cls: "bg-red-100 text-red-700" },
+      { key: "total", code: "01", label: "ВСЕГО ЗАПИСЕЙ", value: summary.data?.total_rows ?? 0, accent: "text-electric-cobalt" },
+      { key: "normal", code: "02", label: "НОРМА", value: by.normal ?? 0, accent: "text-emerald-400" },
+      { key: "late", code: "03", label: "ОПОЗДАНИЯ", value: by.late ?? 0, accent: "text-signal-orange" },
+      { key: "absent", code: "04", label: "ОТСУТСТВИЯ", value: by.absent ?? 0, accent: "text-red-400" },
     ];
   }, [summary.data]);
 
@@ -118,17 +118,22 @@ export default function ReportsPage() {
         }
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
         {summaryCards.map((c) => (
           <div
             key={c.key}
-            className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+            className="rounded-cards border border-ice-white/14 bg-carbon p-5"
           >
-            <div className="text-xs text-slate-500">{c.label}</div>
-            <div className="mt-1 flex items-center gap-2">
-              <span className={`flex h-8 min-w-[2rem] items-center justify-center rounded-lg px-2 text-sm font-semibold ${c.cls}`}>
-                {c.value}
+            <div className="flex items-start justify-between">
+              <span className={`font-mono text-[10px] uppercase tracking-[0.16em] ${c.accent}`}>
+                /{c.code}
               </span>
+            </div>
+            <div className="mt-5 text-[40px] leading-[1] tracking-[-0.03em] tabular-nums text-ice-white">
+              {c.value}
+            </div>
+            <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
+              {c.label}
             </div>
           </div>
         ))}
@@ -136,25 +141,25 @@ export default function ReportsPage() {
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-500">С</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">С</span>
           <input
             type="date"
             value={filters.date_from ?? ""}
             onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+            className="rounded-inputs border border-ice-white/14 bg-carbon/60 px-3 py-2 font-mono text-[12px] uppercase tracking-[0.06em] text-ice-white outline-none transition-colors hover:border-ice-white/30 focus:border-electric-cobalt"
           />
-          <span className="text-sm text-slate-500">по</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">по</span>
           <input
             type="date"
             value={filters.date_to ?? ""}
             onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+            className="rounded-inputs border border-ice-white/14 bg-carbon/60 px-3 py-2 font-mono text-[12px] uppercase tracking-[0.06em] text-ice-white outline-none transition-colors hover:border-ice-white/30 focus:border-electric-cobalt"
           />
         </div>
         <select
           value={filters.organization_id ?? ""}
           onChange={(e) => setFilters({ ...filters, organization_id: e.target.value || undefined })}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+          className="rounded-inputs border border-ice-white/14 bg-carbon/60 px-3 py-2 font-mono text-[12px] uppercase tracking-[0.06em] text-ice-white outline-none transition-colors hover:border-ice-white/30 focus:border-electric-cobalt"
         >
           <option value="">Все организации</option>
           {orgs.data?.items.map((o) => (
@@ -164,7 +169,7 @@ export default function ReportsPage() {
         <select
           value={filters.department_id ?? ""}
           onChange={(e) => setFilters({ ...filters, department_id: e.target.value || undefined })}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+          className="rounded-inputs border border-ice-white/14 bg-carbon/60 px-3 py-2 font-mono text-[12px] uppercase tracking-[0.06em] text-ice-white outline-none transition-colors hover:border-ice-white/30 focus:border-electric-cobalt"
         >
           <option value="">Все отделы</option>
           {deps.data?.map((d) => (
@@ -174,7 +179,7 @@ export default function ReportsPage() {
         <select
           value={filters.branch_id ?? ""}
           onChange={(e) => setFilters({ ...filters, branch_id: e.target.value || undefined })}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+          className="rounded-inputs border border-ice-white/14 bg-carbon/60 px-3 py-2 font-mono text-[12px] uppercase tracking-[0.06em] text-ice-white outline-none transition-colors hover:border-ice-white/30 focus:border-electric-cobalt"
         >
           <option value="">Все филиалы</option>
           {branches.data?.items.map((b) => (
@@ -184,7 +189,7 @@ export default function ReportsPage() {
         <select
           value={filters.status ?? ""}
           onChange={(e) => setFilters({ ...filters, status: e.target.value || undefined })}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+          className="rounded-inputs border border-ice-white/14 bg-carbon/60 px-3 py-2 font-mono text-[12px] uppercase tracking-[0.06em] text-ice-white outline-none transition-colors hover:border-ice-white/30 focus:border-electric-cobalt"
         >
           <option value="">Все статусы</option>
           {Object.entries(STATUS_LABEL).map(([k, v]) => (
