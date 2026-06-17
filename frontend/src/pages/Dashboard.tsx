@@ -5,12 +5,12 @@ import { dashboardApi } from "@/api/dashboard";
 import { useCountUp } from "@/lib/hooks";
 
 const KPI_DEFS = [
-  { key: "total_employees", code: "01", label: "EMPLOYEES", icon: Users },
-  { key: "online_devices", code: "02", label: "DEVICES · ONLINE", icon: Wifi },
-  { key: "total_devices", code: "03", label: "DEVICES · TOTAL", icon: Cpu },
-  { key: "came_today", code: "04", label: "ARRIVED TODAY", icon: ClipboardCheck },
-  { key: "late_today", code: "05", label: "LATE", icon: Clock },
-  { key: "absent_today", code: "06", label: "ABSENT", icon: UserX },
+  { key: "total_employees", code: "01", label: "СОТРУДНИКИ", icon: Users },
+  { key: "online_devices", code: "02", label: "УСТРОЙСТВА · ОНЛАЙН", icon: Wifi },
+  { key: "total_devices", code: "03", label: "УСТРОЙСТВА · ВСЕГО", icon: Cpu },
+  { key: "came_today", code: "04", label: "ПРИШЛИ СЕГОДНЯ", icon: ClipboardCheck },
+  { key: "late_today", code: "05", label: "ОПОЗДАЛИ", icon: Clock },
+  { key: "absent_today", code: "06", label: "НЕ ПРИШЛИ", icon: UserX },
 ] as const;
 
 function KpiCard({
@@ -70,14 +70,14 @@ export default function DashboardPage() {
         <div className="mb-4 flex items-center gap-3">
           <Sparkle className="h-7 w-7 animate-twinkle" />
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-electric-cobalt">
-            / observatory · live
+            / обсерватория · live
           </span>
         </div>
         <h1 className="text-[64px] leading-[1.04] tracking-[-0.03em] text-ice-white">
-          dashboard <span className="text-electric-cobalt">overview</span>.
+          сводка <span className="text-electric-cobalt">системы</span>.
         </h1>
         <p className="mt-5 max-w-xl font-mono text-[12px] leading-[1.8] tracking-[0.06em] text-fog-text">
-          real-time signal from the access network — devices, people, events.
+          сигнал в реальном времени из сети доступа — устройства, люди, события.
         </p>
       </div>
 
@@ -86,7 +86,7 @@ export default function DashboardPage() {
         <div className="mb-6 flex items-center gap-3">
           <div className="h-px flex-1 bg-ice-white/14" />
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
-            kpis — 06 metrics
+            ключевые метрики · 06
           </span>
           <div className="h-px flex-1 bg-ice-white/14" />
         </div>
@@ -106,24 +106,24 @@ export default function DashboardPage() {
           <div className="mb-8 flex items-end justify-between">
             <div>
               <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-electric-cobalt">
-                / weekly
+                / неделя
               </div>
               <h2 className="text-heading-sm tracking-[-0.02em] text-ice-white">
-                attendance signal
+                посещаемость
               </h2>
             </div>
             <div className="flex gap-5 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
               <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-electric-cobalt" /> arrived
+                <span className="h-2 w-2 rounded-full bg-electric-cobalt" /> пришли
               </span>
               <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-signal-orange" /> late
+                <span className="h-2 w-2 rounded-full bg-signal-orange" /> опоздали
               </span>
             </div>
           </div>
           {(!data || data.weekly.length === 0) && (
             <div className="flex h-56 items-center justify-center rounded-inputs border border-dashed border-ice-white/14 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
-              no data — run attendance recalculation
+              нет данных — запустите пересчёт табеля
             </div>
           )}
           {data && data.weekly.length > 0 && (
@@ -166,15 +166,15 @@ export default function DashboardPage() {
         >
           <div className="mb-6">
             <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-electric-cobalt">
-              / stream
+              / поток
             </div>
             <h2 className="text-heading-sm tracking-[-0.02em] text-ice-white">
-              recent events
+              последние события
             </h2>
           </div>
           {(!data || data.recent_events.length === 0) && (
             <div className="flex h-56 items-center justify-center rounded-inputs border border-dashed border-ice-white/14 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
-              empty
+              пусто
             </div>
           )}
           {data && data.recent_events.length > 0 && (
@@ -188,9 +188,9 @@ export default function DashboardPage() {
                   <div>
                     <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-ice-white">
                       {e.event_type === "entry"
-                        ? "→ ENTRY"
+                        ? "→ ВХОД"
                         : e.event_type === "exit"
-                          ? "← EXIT"
+                          ? "← ВЫХОД"
                           : e.event_type.toUpperCase()}
                     </div>
                     <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-fog-text">

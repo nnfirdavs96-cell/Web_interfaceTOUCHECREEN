@@ -1,5 +1,5 @@
-import { Globe, LogOut, Search } from "lucide-react";
-import { useState } from "react";
+import { Globe, LogOut, Moon, Search, Sun } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "@/api/auth";
@@ -12,6 +12,16 @@ export function Topbar() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [langOpen, setLangOpen] = useState(false);
+  const [light, setLight] = useState(
+    () => typeof document !== "undefined" && document.documentElement.classList.contains("light"),
+  );
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("light", light);
+    try { localStorage.setItem("ant-theme", light ? "light" : "dark"); } catch {
+      // ignore
+    }
+  }, [light]);
 
   async function handleLogout() {
     try {
@@ -69,6 +79,14 @@ export function Topbar() {
             </div>
           )}
         </div>
+
+        <button
+          onClick={() => setLight((v) => !v)}
+          className="flex items-center gap-1.5 rounded-inputs border border-transparent px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-ice-white/70 transition-colors hover:border-ice-white/20 hover:text-ice-white"
+          aria-label="Toggle theme"
+        >
+          {light ? <Moon className="h-3.5 w-3.5" strokeWidth={1.5} /> : <Sun className="h-3.5 w-3.5" strokeWidth={1.5} />}
+        </button>
 
         <div className="ml-2 flex items-center gap-3 border-l border-ice-white/14 pl-4">
           <div className="text-right">

@@ -25,22 +25,17 @@
   --radius-buttons: 8px;
 }
 
-/* Force dark canvas — Atlantic is dark-only */
-html {
-  background: #000000;
-}
-html.dark,
-html:not(.dark) {
-  /* Atlantic is dark regardless of toggle */
-  color-scheme: dark;
-}
-
 html,
 body,
 #root {
   height: 100%;
 }
 
+/* Dark (Atlantic.vc) — default */
+html {
+  background: #000000;
+  color-scheme: dark;
+}
 body {
   background: #000000;
   color: var(--color-ice-white);
@@ -49,6 +44,42 @@ body {
   font-feature-settings: "ss01" on, "ss02" on;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Light — inverted observatory: ice canvas, navy text, electric cobalt accent */
+html.light {
+  background: #f4f6fb;
+  color-scheme: light;
+}
+html.light body {
+  background: #f4f6fb;
+  color: #0b1530;
+}
+html.light .bg-void-black { background-color: #f4f6fb !important; }
+html.light .bg-carbon { background-color: #ffffff !important; }
+html.light .bg-carbon\/40 { background-color: rgba(255,255,255,0.6) !important; }
+html.light .bg-carbon\/80 { background-color: rgba(255,255,255,0.9) !important; }
+html.light .bg-slate { background-color: #eef1f7 !important; }
+html.light .bg-slate\/30 { background-color: rgba(238,241,247,0.6) !important; }
+html.light .bg-slate\/40 { background-color: rgba(238,241,247,0.8) !important; }
+html.light .bg-slate\/60 { background-color: #eef1f7 !important; }
+html.light .text-ice-white { color: #0b1530 !important; }
+html.light .text-ice-white\/90 { color: rgba(11,21,48,0.9) !important; }
+html.light .text-ice-white\/70 { color: rgba(11,21,48,0.7) !important; }
+html.light .text-ice-white\/60 { color: rgba(11,21,48,0.6) !important; }
+html.light .text-ice-white\/40 { color: rgba(11,21,48,0.45) !important; }
+html.light .text-ice-white\/30 { color: rgba(11,21,48,0.35) !important; }
+html.light .text-fog-text { color: #6c757f !important; }
+html.light .border-ice-white\/14 { border-color: rgba(11,21,48,0.12) !important; }
+html.light .border-ice-white\/8 { border-color: rgba(11,21,48,0.08) !important; }
+html.light .border-ice-white\/15 { border-color: rgba(11,21,48,0.14) !important; }
+html.light .border-ice-white\/18 { border-color: rgba(11,21,48,0.16) !important; }
+html.light .border-ice-white\/20 { border-color: rgba(11,21,48,0.2) !important; }
+html.light .border-ice-white\/30 { border-color: rgba(11,21,48,0.3) !important; }
+html.light .border-ice-white\/40 { border-color: rgba(11,21,48,0.4) !important; }
+html.light .bg-ice-white\/5 { background-color: rgba(11,21,48,0.04) !important; }
+html.light h1, html.light h2, html.light h3, html.light h4 { color: #0b1530; }
+html.light ::-webkit-scrollbar-thumb { background: rgba(11,21,48,0.18); }
+html.light .wireframe-frame { border-color: rgba(11,21,48,0.2); }
 
 /* Scrollbar — ice-white at low opacity on void */
 ::-webkit-scrollbar {

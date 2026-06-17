@@ -152,7 +152,7 @@ export default function LoginPage() {
           <span className="text-body tracking-[-0.01em] text-ice-white">ant access</span>
         </div>
         <nav className="hidden items-center gap-8 md:flex">
-          {["home", "approach", "devices", "team", "stories"].map((l) => (
+          {["главная", "подход", "устройства", "команда", "истории"].map((l) => (
             <a key={l} href="#" className="font-mono text-[10px] uppercase tracking-[0.16em] text-ice-white/70 hover:text-ice-white">
               {l}
             </a>
@@ -162,7 +162,7 @@ export default function LoginPage() {
           href="#"
           className="rounded-buttons border border-signal-orange px-5 py-2.5 font-mono text-[10px] uppercase tracking-[0.16em] text-signal-orange transition-colors hover:bg-signal-orange/10"
         >
-          follow along
+          следить →
         </a>
       </header>
 
@@ -173,26 +173,25 @@ export default function LoginPage() {
           <div className="mb-5 flex items-center gap-3">
             <Sparkle className="h-9 w-9 animate-twinkle" />
             <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ice-white/70">
-              access · control · observatory
+              доступ · контроль · обсерватория
             </span>
           </div>
           <h1 className="text-[64px] leading-[1.04] tracking-[-0.03em] text-ice-white md:text-[88px]">
-            we make the <span className="text-electric-cobalt">unknown</span>
+            мы делаем <span className="text-electric-cobalt">неизвестное</span>
             <br />
-            <span className="text-electric-cobalt">inevitable</span>.
+            <span className="text-electric-cobalt">неизбежным</span>.
           </h1>
           <p className="mt-8 max-w-md font-mono text-[12px] leading-[1.8] tracking-[0.06em] text-fog-text">
-            biometric access platform for hikvision ds-k1t343mfwx terminals.
+            биометрическая платформа доступа для терминалов hikvision ds-k1t343mfwx.
             <br />
-            a calmer alternative to hikcentral — built for operators who prefer
-            data to dashboards.
+            тихая альтернатива hikcentral — для операторов, которые предпочитают
+            данные дашбордам.
           </p>
 
-          {/* Wireframe scroll cue */}
           <div className="mt-12 flex items-center gap-4">
             <div className="wireframe-frame h-6 w-6 rounded-[2px]" />
             <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
-              sign in to continue
+              войдите, чтобы продолжить
             </span>
           </div>
         </div>
@@ -203,7 +202,7 @@ export default function LoginPage() {
             <div className="mb-8 flex items-center justify-between">
               <div>
                 <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-electric-cobalt">
-                  /auth — session
+                  /auth — сессия
                 </div>
                 <h2 className="text-heading-sm tracking-[-0.02em] text-ice-white">
                   {t("app.title")}
@@ -258,7 +257,7 @@ export default function LoginPage() {
           </div>
 
           <p className="mt-5 text-center font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
-            ant access · midnight observatory
+            ant access · полночная обсерватория
           </p>
         </div>
       </main>
