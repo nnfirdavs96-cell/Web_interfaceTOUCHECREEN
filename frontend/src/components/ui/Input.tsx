@@ -2,12 +2,12 @@ import { forwardRef, type InputHTMLAttributes, type TextareaHTMLAttributes } fro
 import { cn } from "@/lib/utils";
 
 const baseField =
-  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm " +
-  "shadow-soft outline-none transition-all duration-150 " +
-  "placeholder:text-slate-400 " +
-  "hover:border-slate-300 " +
-  "focus:border-brand focus:ring-2 focus:ring-brand/20 focus:shadow-none " +
-  "disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed " +
+  "w-full rounded-inputs border border-mist-border bg-paper px-3 py-2 text-body-sm " +
+  "outline-none transition-all duration-150 " +
+  "placeholder:text-steel " +
+  "hover:border-steel " +
+  "focus:border-signal focus:ring-2 focus:ring-signal/20 " +
+  "disabled:bg-fog disabled:text-steel disabled:cursor-not-allowed " +
   "dark:border-slate-700 dark:bg-slate-800 dark:placeholder:text-slate-500 " +
   "dark:hover:border-slate-600 dark:disabled:bg-slate-900";
 
@@ -39,12 +39,12 @@ export function Field({
   return (
     <div>
       {label && (
-        <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
+        <label className="mb-1.5 block text-caption font-medium text-navy dark:text-slate-300">
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
       {children}
-      {hint && <div className="mt-1 text-[11px] text-slate-500">{hint}</div>}
+      {hint && <div className="mt-1 text-micro text-slate2 dark:text-slate-400">{hint}</div>}
     </div>
   );
 }

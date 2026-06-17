@@ -40,45 +40,47 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-4 dark:bg-slate-950">
-      {/* Сетка фона */}
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.025)_1px,transparent_1px)] [background-size:40px_40px] dark:bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)]" />
-
-      {/* Плавающие цветные шары с параллаксом */}
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-mist px-4 dark:bg-slate-950">
+      {/* Декоративные «watercolor» блобы по Calendly — магента/ultraviolet/амбер/cyan */}
       <div
-        className="pointer-events-none absolute -left-32 top-1/4 h-96 w-96 rounded-full bg-brand/30 opacity-50 mix-blend-multiply blur-3xl animate-float dark:opacity-30 dark:mix-blend-screen"
+        className="pointer-events-none absolute -left-40 top-1/4 h-[28rem] w-[28rem] rounded-full bg-magenta/40 mix-blend-multiply blur-3xl animate-float dark:opacity-25 dark:mix-blend-screen"
         style={{ transform: `translate(${x * 1.5}px, ${y * 1.5}px)` }}
       />
       <div
-        className="pointer-events-none absolute -right-32 bottom-1/4 h-96 w-96 rounded-full bg-violet-400/30 opacity-50 mix-blend-multiply blur-3xl animate-float-delayed dark:opacity-30 dark:mix-blend-screen"
+        className="pointer-events-none absolute -right-40 bottom-1/4 h-[28rem] w-[28rem] rounded-full bg-ultraviolet/40 mix-blend-multiply blur-3xl animate-float-delayed dark:opacity-25 dark:mix-blend-screen"
         style={{ transform: `translate(${-x}px, ${-y}px)` }}
       />
       <div
-        className="pointer-events-none absolute left-1/3 -bottom-32 h-72 w-72 rounded-full bg-cyan-300/30 opacity-40 mix-blend-multiply blur-3xl dark:opacity-25 dark:mix-blend-screen"
+        className="pointer-events-none absolute left-1/3 -bottom-32 h-72 w-72 rounded-full bg-amber/30 mix-blend-multiply blur-3xl dark:opacity-20 dark:mix-blend-screen"
         style={{ transform: `translate(${x * 0.6}px, ${-y * 0.6}px)` }}
+      />
+      <div
+        className="pointer-events-none absolute right-1/3 -top-20 h-64 w-64 rounded-full bg-cyan/30 mix-blend-multiply blur-3xl dark:opacity-20 dark:mix-blend-screen"
+        style={{ transform: `translate(${-x * 0.4}px, ${y * 0.4}px)` }}
       />
 
       <div
         className="relative w-full max-w-md animate-slide-up"
         style={{
-          transform: `perspective(1200px) rotateX(${-y * 0.05}deg) rotateY(${x * 0.05}deg)`,
+          transform: `perspective(1200px) rotateX(${-y * 0.04}deg) rotateY(${x * 0.04}deg)`,
           transition: "transform 0.15s ease-out",
         }}
       >
-        <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-8 shadow-elevated backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90">
+        {/* Product UI Card — белая поверхность с радиусом 16px (mockups) и signature blue-tinted shadow */}
+        <div className="rounded-mockups border border-mist-border bg-paper p-10 shadow-elevated dark:border-slate-800 dark:bg-slate-900">
           <div className="mb-8 flex flex-col items-center text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-elevated animate-scale-in">
-              <Fingerprint className="h-8 w-8" />
+            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-cards bg-signal text-white shadow-button animate-scale-in">
+              <Fingerprint className="h-7 w-7" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">{t("app.title")}</h1>
-            <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
+            <h1 className="text-heading tracking-tight">{t("app.title")}</h1>
+            <p className="mt-2 text-body-sm text-slate2 dark:text-slate-400">
               {t("app.subtitle")}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
+              <label className="mb-1.5 block text-caption font-semibold text-navy dark:text-slate-300">
                 {t("app.email")}
               </label>
               <input
@@ -86,11 +88,11 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-soft outline-none transition-all duration-150 hover:border-slate-300 focus:border-brand focus:ring-2 focus:ring-brand/20 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600"
+                className="w-full rounded-inputs border border-mist-border bg-paper px-3 py-2.5 text-body-sm outline-none transition-all duration-150 hover:border-steel focus:border-signal focus:ring-2 focus:ring-signal/20 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
+              <label className="mb-1.5 block text-caption font-semibold text-navy dark:text-slate-300">
                 {t("app.password")}
               </label>
               <input
@@ -98,12 +100,12 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-soft outline-none transition-all duration-150 hover:border-slate-300 focus:border-brand focus:ring-2 focus:ring-brand/20 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600"
+                className="w-full rounded-inputs border border-mist-border bg-paper px-3 py-2.5 text-body-sm outline-none transition-all duration-150 hover:border-steel focus:border-signal focus:ring-2 focus:ring-signal/20 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600"
               />
             </div>
 
             {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 animate-slide-down dark:border-red-900 dark:bg-red-950/50 dark:text-red-300">
+              <div className="rounded-inputs border border-red-200 bg-red-50 px-3 py-2.5 text-caption text-red-700 animate-slide-down dark:border-red-900 dark:bg-red-950/50 dark:text-red-300">
                 {error}
               </div>
             )}
@@ -111,9 +113,8 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-white shadow-soft transition-all duration-200 hover:bg-brand-dark hover:shadow-card active:scale-[0.99] disabled:opacity-60 disabled:active:scale-100"
+              className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-buttons bg-signal px-6 py-3 text-body-sm font-semibold text-white shadow-button transition-all duration-200 hover:bg-signal-dark active:scale-[0.99] disabled:opacity-60 disabled:active:scale-100"
             >
-              {/* Глянец при hover */}
               <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               <span className="relative">{t("app.login")}</span>
@@ -121,9 +122,7 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="mt-4 text-center text-[11px] text-slate-400">
-          ANT Access · v0.7
-        </p>
+        <p className="mt-5 text-center text-micro text-steel">ANT Access · v0.7</p>
       </div>
     </div>
   );

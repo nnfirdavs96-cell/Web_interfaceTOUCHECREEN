@@ -36,16 +36,16 @@ const nav = [
 export function Sidebar() {
   const { t } = useTranslation();
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 md:flex">
-      <div className="flex h-16 items-center gap-3 border-b border-slate-200 px-5 dark:border-slate-800">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-soft">
+    <aside className="hidden w-64 shrink-0 flex-col border-r border-mist-border bg-paper dark:border-slate-800 dark:bg-slate-900 md:flex">
+      <div className="flex h-[72px] items-center gap-3 border-b border-mist-border px-5 dark:border-slate-800">
+        <div className="flex h-10 w-10 items-center justify-center rounded-cards bg-signal text-white shadow-soft">
           <Fingerprint className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold leading-none tracking-tight">
+          <div className="truncate text-body-sm font-bold leading-none tracking-tight text-navy dark:text-white">
             {t("app.title")}
           </div>
-          <div className="mt-1.5 text-[10px] font-medium uppercase tracking-widest text-slate-400">
+          <div className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-steel">
             v0.7 · dev
           </div>
         </div>
@@ -57,31 +57,29 @@ export function Sidebar() {
             <li
               key={item.to}
               className="opacity-0 animate-slide-right [animation-fill-mode:forwards]"
-              style={{ animationDelay: `${i * 35}ms` }}
+              style={{ animationDelay: `${i * 30}ms` }}
             >
               <NavLink
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200",
+                    "group relative flex items-center gap-3 rounded-inputs px-3 py-2 text-caption transition-all duration-150",
                     isActive
-                      ? "bg-brand/10 font-medium text-brand shadow-soft dark:bg-brand/15"
-                      : "text-slate-600 hover:translate-x-0.5 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100",
+                      ? "bg-fog font-semibold text-navy dark:bg-signal/15 dark:text-white"
+                      : "text-slate2 hover:bg-fog/60 hover:text-navy dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100",
                   )
                 }
               >
                 {({ isActive }) => (
                   <>
                     {isActive && (
-                      <span className="absolute left-0 top-1.5 h-[calc(100%-12px)] w-0.5 rounded-r bg-brand animate-fade-in" />
+                      <span className="absolute left-0 top-1.5 h-[calc(100%-12px)] w-0.5 rounded-r bg-signal animate-fade-in" />
                     )}
                     <item.icon
                       className={cn(
-                        "h-4 w-4 shrink-0 transition-all duration-200",
-                        isActive
-                          ? "text-brand scale-110"
-                          : "text-slate-400 group-hover:text-slate-600 group-hover:scale-105 dark:group-hover:text-slate-300",
+                        "h-4 w-4 shrink-0 transition-colors",
+                        isActive ? "text-signal" : "text-steel group-hover:text-slate2",
                       )}
                     />
                     {t(item.labelKey)}
@@ -93,7 +91,7 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <div className="border-t border-slate-200 p-4 text-[11px] text-slate-400 dark:border-slate-800">
+      <div className="border-t border-mist-border p-4 text-micro text-steel dark:border-slate-800">
         © 2026 ANT Access
       </div>
     </aside>
