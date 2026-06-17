@@ -6,6 +6,14 @@ import { router } from "./router";
 import "./i18n";
 import "./index.css";
 
+try {
+  if (localStorage.getItem("ant-theme") === "light") {
+    document.documentElement.classList.add("light");
+  }
+} catch {
+  // ignore
+}
+
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
 });

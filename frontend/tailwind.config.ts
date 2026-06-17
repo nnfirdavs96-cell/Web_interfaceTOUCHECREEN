@@ -51,7 +51,7 @@ export default {
           900: "#04123d",
         },
         slate2: "#6c757f", // fog — secondary body text
-        carbon: "#d8eaff", // body text (was #0a0a0a) → ice-white on dark
+        carbon: "#0d0d0f", // Atlantic carbon surface (was misnamed as text)
         paper: "#0d0d0f", // carbon surface
         mist: "#000000", // void canvas
         fog: "#2b2f33", // slate — soft fill / hover
