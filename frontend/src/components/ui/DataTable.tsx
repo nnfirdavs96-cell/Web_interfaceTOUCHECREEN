@@ -26,17 +26,17 @@ export function DataTable<T>({
   empty = "Нет данных",
 }: Props<T>) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
+    <div className="overflow-hidden rounded-cards border border-mist-border bg-paper shadow-card dark:border-slate-800 dark:bg-slate-900">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/40">
+        <table className="w-full text-body-sm">
+          <thead className="border-b border-mist-border bg-mist/60 dark:border-slate-800 dark:bg-slate-800/40">
             <tr>
               {columns.map((c) => (
                 <th
                   key={c.key}
                   style={c.width ? { width: c.width } : undefined}
                   className={cn(
-                    "px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500",
+                    "px-4 py-3 text-left text-micro font-semibold uppercase tracking-wider text-slate2",
                     c.className,
                   )}
                 >
@@ -48,14 +48,14 @@ export function DataTable<T>({
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={columns.length} className="py-12 text-center text-sm text-slate-400">
+                <td colSpan={columns.length} className="py-12 text-center text-caption text-steel">
                   Загрузка…
                 </td>
               </tr>
             )}
             {!loading && rows.length === 0 && (
               <tr>
-                <td colSpan={columns.length} className="py-12 text-center text-sm text-slate-400">
+                <td colSpan={columns.length} className="py-12 text-center text-caption text-steel">
                   {empty}
                 </td>
               </tr>
@@ -66,18 +66,15 @@ export function DataTable<T>({
                   key={rowKey(row)}
                   onClick={() => onRowClick?.(row)}
                   className={cn(
-                    "border-t border-slate-100 transition-colors dark:border-slate-800/60",
+                    "border-t border-mist-border/60 transition-colors dark:border-slate-800/60",
                     onRowClick &&
-                      "cursor-pointer hover:bg-brand/5 dark:hover:bg-brand/10",
+                      "cursor-pointer hover:bg-fog/60 dark:hover:bg-signal/10",
                   )}
                 >
                   {columns.map((c) => (
                     <td
                       key={c.key}
-                      className={cn(
-                        "px-4 py-3 text-slate-700 dark:text-slate-300",
-                        c.className,
-                      )}
+                      className={cn("px-4 py-3 text-carbon dark:text-slate-300", c.className)}
                     >
                       {c.render
                         ? c.render(row)
