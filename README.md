@@ -76,9 +76,18 @@
 
 Все слои имеют override'ы для светлой темы и уважают `prefers-reduced-motion`.
 
-**Переиспользуемые примитивы** (`src/components/ui/`): `Button`, `Input`/`Textarea`/`Field`, `Drawer`, `DataTable`, `PageHeader`, `Card` (+ `glow`/`hoverable`), `Badge` (тоны success/neutral/accent/warning/danger), `EmptyState`, `Loading`.
+**Переиспользуемые примитивы** (`src/components/ui/`): `Button`, `Input`/`Textarea`/`Field`, `Drawer`, `DataTable`, `PageHeader` (с поддержкой `eyebrow` Mono-лейбла), `Card` (+ `glow`/`hoverable`), `Badge` (тоны success/neutral/accent/warning/danger), `EmptyState`, `Loading`.
 
-**Где видно:** дашборд (glow KPI-карточки с градиентными цифрами, недельная диаграмма со светящимися столбцами), сайдбар (стеклянный фон, светящийся active-индикатор), топбар (cobalt-аватар), логин (particle-cloud + градиентный герой).
+**Навигация и интеракции:**
+
+- **Hamburger toggle** — кнопка Menu/X в топбаре. На мобиле сайдбар выезжает как drawer с тёмным backdrop, на десктопе работает inline + сворачивается по требованию. Авто-закрытие при смене страницы на узких экранах.
+- **Глобальный поиск** в топбаре — `<form>` с Enter-submit, маршрутизация по ключевым словам: `устройство/device/терминал` → `/devices`, `отчёт/report/табел` → `/reports`, `расписание/график` → `/schedules`, `приход/уход/событие` → `/attendance` и т.д. Дефолт — `/employees?q=...`. Целевая страница инициализирует фильтр из `?q=` и синхронизируется при изменении URL. Подсказка `enter ↵` появляется при наборе.
+- **Light theme** — полностью функциональная инвертированная версия: ice canvas `#f4f6fb`, белые карточки, navy `#0b1530` текст, electric cobalt акцент сохранён. Переключатель Sun/Moon в топбаре, выбор сохраняется в `localStorage` под ключом `ant-theme`. Все depth-утилиты (`.glow-card`, `.text-gradient`, `.app-aurora`, `.accent-top`) имеют light-варианты. Status-бейджи (emerald/orange/red/amber/sky) углубляются до 700-семьи для AA контраста на белом.
+- **Eyebrow-лейблы на всех страницах** — `/ реестр · персонал`, `/ графики · время`, `/ поток · события`, `/ структура · юр.лица`, `/ присутствие · точки`, `/ доступ · учётки`, `/ журнал · аудит`, `/ конфигурация · система`, `/ сеть · терминалы`, `/ табель · экспорт` — Mono uppercase микро-заголовки над H1 каждой страницы для editorial-единства.
+
+**Dark-mode legacy overlay** — `html.dark` в `src/index.css` ретаргетит встроенные Tailwind-цвета (`bg-white`, `bg-slate-50/100/200`, `border-slate-200/300`, пастельные `bg-emerald-100/amber-100/red-100/orange-100/sky-100`, `text-slate-400..900`) на палитру Atlantic. Все 13 страниц приложения получают тёмный editorial-фон без пер-файловых правок.
+
+**Где видно:** дашборд (glow KPI-карточки с градиентными цифрами, недельная диаграмма со светящимися столбцами), сайдбар (стеклянный фон, светящийся active-индикатор, slide-in drawer на мобиле), топбар (hamburger toggle, рабочий поиск, cobalt-аватар, переключатель темы), логин (particle-cloud + градиентный герой).
 
 ---
 
