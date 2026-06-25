@@ -14,15 +14,9 @@ import {
   Shield,
   UserCog,
   Users,
-  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-
-interface Props {
-  open: boolean;
-  onClose: () => void;
-}
 
 type LucideIcon = typeof LayoutDashboard;
 
@@ -98,7 +92,7 @@ function loadCollapsed(): Record<string, boolean> {
   }
 }
 
-export function Sidebar({ open, onClose }: Props) {
+export function Sidebar() {
   const { t } = useTranslation();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(loadCollapsed);
@@ -126,11 +120,7 @@ export function Sidebar({ open, onClose }: Props) {
 
   return (
     <aside
-      className={cn(
-        "fixed left-0 top-0 z-40 flex h-full w-64 shrink-0 flex-col border-r border-ice-white/14 bg-void-black/95 backdrop-blur-xl transition-transform duration-300 ease-out",
-        "md:relative md:z-10 md:translate-x-0 md:bg-void-black/80",
-        open ? "translate-x-0" : "-translate-x-full",
-      )}
+      className="relative z-10 hidden h-full w-64 shrink-0 flex-col border-r border-ice-white/14 bg-void-black/80 backdrop-blur-xl md:flex"
     >
       {/* Brand mark */}
       <div className="flex h-[72px] items-center gap-3 border-b border-ice-white/14 px-5">
@@ -145,13 +135,6 @@ export function Sidebar({ open, onClose }: Props) {
             v0.7 — dev
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="rounded-inputs p-1.5 text-ice-white/60 transition-colors hover:bg-ice-white/5 hover:text-ice-white md:hidden"
-          aria-label="Закрыть меню"
-        >
-          <X className="h-4 w-4" strokeWidth={1.5} />
-        </button>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
