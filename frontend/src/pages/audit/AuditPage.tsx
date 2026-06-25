@@ -59,7 +59,7 @@ export default function AuditPage() {
 
   return (
     <div>
-      <PageHeader title="Логи действий" subtitle="История всех изменений в системе" />
+      <PageHeader eyebrow="/ журнал · аудит" title="Логи действий" subtitle="История всех изменений в системе" />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <select

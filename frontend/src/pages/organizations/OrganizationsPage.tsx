@@ -96,6 +96,7 @@ export default function OrganizationsPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="/ структура · юр.лица"
         title="Организации"
         subtitle="Юридические лица, которым принадлежат филиалы и сотрудники"
         actions={

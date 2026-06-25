@@ -214,6 +214,7 @@ export default function EmployeesPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="/ реестр · персонал"
         title="Сотрудники"
         subtitle="Реестр сотрудников, привязка к устройствам и расписаниям"
         actions={

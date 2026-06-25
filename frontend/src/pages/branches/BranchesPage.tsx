@@ -103,6 +103,7 @@ export default function BranchesPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="/ присутствие · точки"
         title="Филиалы / Точки"
         subtitle="Физические точки присутствия: офисы, магазины, склады"
         actions={

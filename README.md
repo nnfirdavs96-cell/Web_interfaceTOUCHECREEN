@@ -1,8 +1,10 @@
-# Hikvision Access Control Web Platform
+# ANT Access · Midnight Observatory
 
 Современная веб-платформа для управления устройствами контроля доступа Hikvision (тестировано на DS-K1T343MFWX V4.48), учёта рабочего времени сотрудников и формирования отчётов. Альтернатива HikCentral / iVMS-4200 с упором на простоту, красивый UI и работу прямо из браузера.
 
 > **Статус:** в production-готовом виде работают все 7 этапов. Эмпирически проверено на реальном устройстве DS-K1T343MFWX (прошивка V4.48.0) — синхронизация сотрудников, регистрация карт, отпечатков, лиц, расчёт табеля, экспорт отчётов.
+>
+> **Design:** Atlantic.vc «midnight observatory» — тёмный editorial canvas (#000), карбоновые карточки (#0d0d0f), ice-white #d8eaff текст, electric cobalt #1f58f2 акцент, signal orange #ff4105 — только для CTA. Type: Space Grotesk 400 (Monument substitute) + JetBrains Mono для микро-лейблов. Light-режим инвертирован, переключатель в топбаре.
 
 ---
 
@@ -18,8 +20,9 @@
 8. [Workflow администратора](#workflow-администратора)
 9. [Workflow регистрации сотрудника](#workflow-регистрации-сотрудника)
 10. [API / RBAC / Hikvision-обвязка](#api--rbac--hikvision-обвязка)
-11. [Что осталось](#что-осталось)
-12. [Полезные команды](#полезные-команды)
+11. [Design system](#design-system)
+12. [Что осталось](#что-осталось)
+13. [Полезные команды](#полезные-команды)
 
 ---
 
@@ -478,6 +481,59 @@ HIKVISION_MODE=isapi
 - Парсер обоих форматов (XML + JSON) — V4.48 возвращает XML даже на `?format=json`
 - Friendly Russian error messages (mapping `cardNoAlreadyExist` → «Карта уже занята» и т.д.)
 - subprocess curl для face upload (httpx multipart ломается в этой прошивке)
+
+---
+
+## Design system
+
+Дизайн-язык — **Atlantic.vc "midnight observatory"**: тёмный научно-editorial интерфейс типа CAD/обсерватория, без теней (depth только через слои поверхностей и 1px wireframe-бордеры), single-weight типографика (Space Grotesk 400) — командует размером, не насыщенностью.
+
+### Tokens
+
+| Уровень | Значение | Назначение |
+|---|---|---|
+| `--void-black` | `#000000` | Page canvas |
+| `--carbon` | `#0d0d0f` | Card surface |
+| `--graphite` | `#232529` | Body background / footer |
+| `--slate` | `#2b2f33` | Default panel / hover fill |
+| `--iron` | `#41464c` | Tertiary text / divider |
+| `--fog-text` | `#6c757f` | Secondary text |
+| `--ice-white` | `#d8eaff` | Primary text + 1px wireframe borders |
+| `--electric-cobalt` | `#1f58f2` | Highlight accent (только подсветка слов в заголовках) |
+| `--signal-orange` | `#ff4105` | CTA outline (единственный warm-акцент) |
+
+### Type scale
+
+- **Display** 96px / lh 1.0 / ls -0.03em — hero
+- **Heading** 64px / lh 1.06 — section title
+- **Heading-sm** 24px / lh 1.24 — sub-section
+- **Body** 14-16px — Space Grotesk 400
+- **Caption / Mono** 10-12px — JetBrains Mono uppercase, tracking 0.16em (scientific-instrument feel)
+
+### Components
+
+- **PageHeader** — поддерживает `eyebrow="/ section · subtitle"` Mono-лейбл над заголовком
+- **Button** — outlined, не filled. Primary = orange border, Secondary = ice-white/30 border
+- **Input / Field** — transparent surface, ice-white/14 hairline, electric-cobalt focus
+- **DataTable** — mono uppercase column headers, ice-white/8 row dividers
+- **Sparkle** — hand-drawn 6-point asterisk в electric cobalt, разделитель секций
+- **Wireframe-frame** — 1px ice-white контейнер с electric cobalt угловыми точками
+
+### Темы
+
+- **Dark (default)** — Atlantic editorial canvas
+- **Light** — инвертированная версия: ice canvas `#f4f6fb`, белые карточки, navy `#0b1530` текст
+- Переключатель в топбаре (Sun/Moon), сохраняется в `localStorage` под ключом `ant-theme`
+
+### Pre-delivery checklist (соблюдено)
+
+- ✅ Иконки — Lucide (SVG, не emoji)
+- ✅ `cursor-pointer` на интерактивных элементах (через глобальный CSS)
+- ✅ Transitions 150-300ms на hover/focus/active
+- ✅ Контраст ice-white на carbon ≥ 4.5:1
+- ✅ Focus ring видимый — electric cobalt 1px box-shadow
+- ✅ `prefers-reduced-motion` — все анимации отключаются
+- ✅ Responsive breakpoints — 768/1024/1280/1400
 
 ---
 

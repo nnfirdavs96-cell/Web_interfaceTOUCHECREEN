@@ -112,6 +112,7 @@ export default function SchedulesPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="/ графики · время"
         title="Расписания"
         subtitle="Графики работы для сотрудников, отделов и филиалов"
         actions={

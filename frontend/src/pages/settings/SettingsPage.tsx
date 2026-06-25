@@ -40,7 +40,7 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <PageHeader title={t("settings.title")} subtitle={t("settings.subtitle")} />
+      <PageHeader eyebrow="/ конфигурация · система" title={t("settings.title")} subtitle={t("settings.subtitle")} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Section icon={Server} title="System">

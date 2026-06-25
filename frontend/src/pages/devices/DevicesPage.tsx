@@ -152,6 +152,7 @@ export default function DevicesPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="/ сеть · терминалы"
         title="Устройства"
         subtitle="Терминалы Hikvision: статус, синхронизация, проверка связи"
         actions={

@@ -148,3 +148,77 @@ a:hover {
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================================
+ * Atlantic.vc dark-mode legacy overlay.
+ * Catches Tailwind's built-in light grays/colors used across the
+ * remaining (un-rewritten) pages and remaps them to the Atlantic
+ * palette so the whole app reads as one editorial system without
+ * touching each file. Active only in dark mode.
+ * ============================================================ */
+html.dark .bg-white { background-color: #0d0d0f !important; }
+html.dark .bg-slate-50 { background-color: rgba(216,234,255,0.04) !important; }
+html.dark .bg-slate-100 { background-color: rgba(216,234,255,0.06) !important; }
+html.dark .bg-slate-200 { background-color: rgba(216,234,255,0.08) !important; }
+
+html.dark .border-slate-100 { border-color: rgba(216,234,255,0.08) !important; }
+html.dark .border-slate-200 { border-color: rgba(216,234,255,0.14) !important; }
+html.dark .border-slate-300 { border-color: rgba(216,234,255,0.18) !important; }
+
+/* Force inputs / selects without dark variants to read on void canvas */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+html.dark select,
+html.dark textarea {
+  background-color: rgba(13,13,15,0.6);
+  color: #d8eaff;
+  border-color: rgba(216,234,255,0.14);
+}
+html.dark input:focus,
+html.dark select:focus,
+html.dark textarea:focus {
+  border-color: #1f58f2;
+  background-color: #0d0d0f;
+}
+html.dark option { background-color: #0d0d0f; color: #d8eaff; }
+
+/* Pastel status chips → translucent variants on dark */
+html.dark .bg-emerald-50  { background-color: rgba(16,185,129,0.10) !important; color: #34d399 !important; }
+html.dark .bg-emerald-100 { background-color: rgba(16,185,129,0.12) !important; color: #34d399 !important; }
+html.dark .text-emerald-700 { color: #34d399 !important; }
+html.dark .text-emerald-600 { color: #34d399 !important; }
+
+html.dark .bg-amber-50  { background-color: rgba(245,158,11,0.10) !important; color: #fbbf24 !important; }
+html.dark .bg-amber-100 { background-color: rgba(245,158,11,0.12) !important; color: #fbbf24 !important; }
+html.dark .text-amber-700 { color: #fbbf24 !important; }
+html.dark .text-amber-600 { color: #fbbf24 !important; }
+
+html.dark .bg-orange-50  { background-color: rgba(255,65,5,0.10) !important; color: #ff4105 !important; }
+html.dark .bg-orange-100 { background-color: rgba(255,65,5,0.12) !important; color: #ff4105 !important; }
+html.dark .text-orange-700 { color: #ff4105 !important; }
+html.dark .text-orange-600 { color: #ff4105 !important; }
+
+html.dark .bg-red-50  { background-color: rgba(239,68,68,0.10) !important; color: #f87171 !important; }
+html.dark .bg-red-100 { background-color: rgba(239,68,68,0.12) !important; color: #f87171 !important; }
+html.dark .text-red-700 { color: #f87171 !important; }
+html.dark .text-red-600 { color: #f87171 !important; }
+
+html.dark .bg-sky-50  { background-color: rgba(31,88,242,0.10) !important; color: #60a5fa !important; }
+html.dark .bg-sky-100 { background-color: rgba(31,88,242,0.12) !important; color: #60a5fa !important; }
+html.dark .text-sky-700 { color: #60a5fa !important; }
+html.dark .text-sky-600 { color: #60a5fa !important; }
+
+html.dark .text-slate-400 { color: rgba(216,234,255,0.55) !important; }
+html.dark .text-slate-500 { color: #6c757f !important; }
+html.dark .text-slate-600 { color: rgba(216,234,255,0.75) !important; }
+html.dark .text-slate-700 { color: rgba(216,234,255,0.85) !important; }
+html.dark .text-slate-800 { color: #d8eaff !important; }
+html.dark .text-slate-900 { color: #d8eaff !important; }
+
+/* Add cursor-pointer to common interactive primitives */
+html button:not(:disabled),
+html [role="button"]:not([aria-disabled="true"]),
+html a[href],
+html label[for],
+html summary {
+  cursor: pointer;
+}
