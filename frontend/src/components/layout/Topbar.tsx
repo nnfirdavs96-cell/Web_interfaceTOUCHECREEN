@@ -1,20 +1,49 @@
-import { Globe, LogOut, Moon, Search, Sun } from "lucide-react";
+import { Globe, LogOut, Menu, Moon, Search, Sun, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { authApi } from "@/api/auth";
 import { LANGS } from "@/i18n";
 import { useAuthStore } from "@/stores/auth";
 
-export function Topbar() {
+// Map a search query to the section it makes most sense to land in.
+function routeFor(q: string): string {
+  const s = q.trim().toLowerCase();
+  if (!s) return "/employees";
+  if (/устройств|device|терминал|hikvision|ip|серийн/i.test(s)) return "/devices";
+  if (/отчёт|отчет|report|табел/i.test(s)) return "/reports";
+  if (/расписан|schedule|график/i.test(s)) return "/schedules";
+  if (/приход|уход|attendance|событ/i.test(s)) return "/attendance";
+  if (/филиал|branch|точк/i.test(s)) return "/branches";
+  if (/отдел|department/i.test(s)) return "/departments";
+  if (/организац|organization/i.test(s)) return "/organizations";
+  if (/настройк|settings/i.test(s)) return "/settings";
+  if (/аудит|audit|лог/i.test(s)) return "/audit";
+  if (/пользовател|user|admin/i.test(s)) return "/users";
+  return "/employees";
+}
+
+interface Props {
+  onToggleSidebar?: () => void;
+  sidebarOpen?: boolean;
+}
+
+export function Topbar({ onToggleSidebar, sidebarOpen }: Props = {}) {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, i18n } = useTranslation();
   const [langOpen, setLangOpen] = useState(false);
+  const [query, setQuery] = useState(() => new URLSearchParams(location.search).get("q") ?? "");
   const [light, setLight] = useState(
     () => typeof document !== "undefined" && document.documentElement.classList.contains("light"),
   );
+
+  // Sync search input with URL when navigation happens elsewhere
+  useEffect(() => {
+    setQuery(new URLSearchParams(location.search).get("q") ?? "");
+  }, [location.search]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("light", light);
@@ -23,6 +52,13 @@ export function Topbar() {
       // ignore
     }
   }, [light]);
+
+  function submitSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const target = routeFor(query);
+    const qp = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : "";
+    navigate(`${target}${qp}`);
+  }
 
   async function handleLogout() {
     try {
@@ -37,14 +73,30 @@ export function Topbar() {
   const currentLang = LANGS.find((l) => l.code === i18n.resolvedLanguage) ?? LANGS[0];
 
   return (
-    <header className="sticky top-0 z-20 flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-ice-white/14 bg-void-black/90 px-6 backdrop-blur-md">
-      <div className="relative max-w-md flex-1">
+    <header className="sticky top-0 z-20 flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-ice-white/14 bg-void-black/90 px-4 backdrop-blur-md md:px-6">
+      {onToggleSidebar && (
+        <button
+          onClick={onToggleSidebar}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-inputs border border-ice-white/14 text-ice-white/80 transition-colors hover:border-electric-cobalt/50 hover:text-electric-cobalt"
+          aria-label={sidebarOpen ? "Скрыть меню" : "Показать меню"}
+        >
+          {sidebarOpen ? <X className="h-4 w-4" strokeWidth={1.5} /> : <Menu className="h-4 w-4" strokeWidth={1.5} />}
+        </button>
+      )}
+      <form onSubmit={submitSearch} className="relative max-w-md flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ice-white/40" strokeWidth={1.5} />
         <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
           placeholder={t("app.search")}
-          className="w-full rounded-inputs border border-ice-white/14 bg-carbon/40 py-2 pl-9 pr-3 font-mono text-[12px] tracking-[0.06em] text-ice-white outline-none transition-all duration-150 placeholder:uppercase placeholder:text-fog-text hover:border-ice-white/30 focus:border-electric-cobalt focus:bg-carbon"
+          className="w-full rounded-inputs border border-ice-white/14 bg-carbon/40 py-2 pl-9 pr-12 font-mono text-[12px] tracking-[0.06em] text-ice-white outline-none transition-all duration-150 placeholder:uppercase placeholder:text-fog-text hover:border-ice-white/30 focus:border-electric-cobalt focus:bg-carbon"
         />
-      </div>
+        {query && (
+          <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[9px] uppercase tracking-[0.12em] text-fog-text">
+            enter ↵
+          </kbd>
+        )}
+      </form>
 
       <div className="flex items-center gap-2">
         <div className="relative">

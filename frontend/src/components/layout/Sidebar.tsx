@@ -13,8 +13,14 @@ import {
   Shield,
   UserCog,
   Users,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+interface Props {
+  open: boolean;
+  onClose: () => void;
+}
 
 const nav = [
   { to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard, end: true },
@@ -32,10 +38,16 @@ const nav = [
   { to: "/settings", labelKey: "nav.settings", icon: Settings },
 ];
 
-export function Sidebar() {
+export function Sidebar({ open, onClose }: Props) {
   const { t } = useTranslation();
   return (
-    <aside className="relative z-10 hidden w-64 shrink-0 flex-col border-r border-ice-white/14 bg-void-black/80 backdrop-blur-xl md:flex">
+    <aside
+      className={cn(
+        "fixed left-0 top-0 z-40 flex h-full w-64 shrink-0 flex-col border-r border-ice-white/14 bg-void-black/95 backdrop-blur-xl transition-transform duration-300 ease-out",
+        "md:relative md:z-10 md:translate-x-0 md:bg-void-black/80",
+        open ? "translate-x-0" : "-translate-x-full",
+      )}
+    >
       {/* Brand mark — Atlantic geometric glyph + wordmark */}
       <div className="flex h-[72px] items-center gap-3 border-b border-ice-white/14 px-5">
         <div className="relative flex h-9 w-9 items-center justify-center border border-ice-white/40">
@@ -49,6 +61,13 @@ export function Sidebar() {
             v0.7 — dev
           </div>
         </div>
+        <button
+          onClick={onClose}
+          className="rounded-inputs p-1.5 text-ice-white/60 transition-colors hover:bg-ice-white/5 hover:text-ice-white md:hidden"
+          aria-label="Закрыть меню"
+        >
+          <X className="h-4 w-4" strokeWidth={1.5} />
+        </button>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-6">

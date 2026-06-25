@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Cpu, ExternalLink, Pencil, Trash2, UserPlus } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { branchesApi } from "@/api/branches";
 import { depsApi } from "@/api/departments";
 import { devicesApi } from "@/api/devices";
@@ -33,9 +33,16 @@ function initials(emp: Employee) {
 
 export default function EmployeesPage() {
   const qc = useQueryClient();
-  const [search, setSearch] = useState("");
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [orgFilter, setOrgFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+
+  // Sync from topbar global search when URL changes
+  useEffect(() => {
+    const q = searchParams.get("q") ?? "";
+    setSearch(q);
+  }, [searchParams]);
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
