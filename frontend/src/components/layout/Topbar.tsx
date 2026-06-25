@@ -98,7 +98,7 @@ export function Topbar() {
               {user?.role}
             </div>
           </div>
-          <div className="flex h-9 w-9 items-center justify-center border border-ice-white/40 font-mono text-[12px] tracking-[0.06em] text-ice-white">
+          <div className="flex h-9 w-9 items-center justify-center rounded-[6px] border border-electric-cobalt/40 bg-gradient-to-br from-electric-cobalt/25 to-transparent font-mono text-[12px] tracking-[0.06em] text-ice-white shadow-[0_0_12px_-2px_rgba(31,88,242,0.6)]">
             {user?.full_name?.[0] ?? "U"}
           </div>
           <button

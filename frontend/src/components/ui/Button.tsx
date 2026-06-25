@@ -18,11 +18,11 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
   ref,
 ) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-buttons font-mono uppercase " +
+    "inline-flex cursor-pointer items-center justify-center gap-2 rounded-buttons font-mono uppercase " +
     "tracking-[0.12em] transition-all duration-150 " +
     "border bg-transparent " +
     "active:scale-[0.98] " +
-    "disabled:opacity-40 disabled:pointer-events-none disabled:active:scale-100";
+    "disabled:cursor-not-allowed disabled:opacity-40 disabled:pointer-events-none disabled:active:scale-100";
   const sizes = {
     sm: "h-8 px-3 text-[10px]",
     md: "h-10 px-6 text-[12px]",

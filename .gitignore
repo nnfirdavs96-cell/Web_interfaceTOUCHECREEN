@@ -19,3 +19,7 @@ dist/
 # Local
 *.log
 *.sqlite3
+
+# build artifacts
+*.tsbuildinfo
+frontend/package-lock.json
