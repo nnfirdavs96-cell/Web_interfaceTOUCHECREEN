@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 interface Props extends HTMLAttributes<HTMLDivElement> {
   /** Adds the ice-white border hover affordance (non-clickable cards). */
   hoverable?: boolean;
+  /** Premium cobalt halo + lift on hover (see .glow-card in index.css). */
+  glow?: boolean;
 }
 
 /**
@@ -12,7 +14,7 @@ interface Props extends HTMLAttributes<HTMLDivElement> {
  * keyboard/pointer interactive (cursor-pointer + hover border).
  */
 export const Card = forwardRef<HTMLDivElement, Props>(function Card(
-  { hoverable, className, onClick, ...rest },
+  { hoverable, glow, className, onClick, ...rest },
   ref,
 ) {
   const interactive = Boolean(onClick);
@@ -22,7 +24,8 @@ export const Card = forwardRef<HTMLDivElement, Props>(function Card(
       onClick={onClick}
       className={cn(
         "rounded-cards border border-ice-white/14 bg-carbon p-6",
-        (hoverable || interactive) && "transition-colors hover:border-ice-white/30",
+        glow && "glow-card",
+        !glow && (hoverable || interactive) && "transition-colors hover:border-ice-white/30",
         interactive && "cursor-pointer",
         className,
       )}

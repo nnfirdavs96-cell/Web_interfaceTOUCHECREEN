@@ -177,9 +177,9 @@ export default function LoginPage() {
             </span>
           </div>
           <h1 className="text-[64px] leading-[1.04] tracking-[-0.03em] text-ice-white md:text-[88px]">
-            мы делаем <span className="text-electric-cobalt">неизвестное</span>
+            мы делаем <span className="text-gradient">неизвестное</span>
             <br />
-            <span className="text-electric-cobalt">неизбежным</span>.
+            <span className="text-gradient">неизбежным</span>.
           </h1>
           <p className="mt-8 max-w-md font-mono text-[12px] leading-[1.8] tracking-[0.06em] text-fog-text">
             биометрическая платформа доступа для терминалов hikvision ds-k1t343mfwx.

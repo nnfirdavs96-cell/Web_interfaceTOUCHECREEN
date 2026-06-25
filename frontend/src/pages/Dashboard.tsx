@@ -26,15 +26,20 @@ function KpiCard({
   return (
     <div
       style={{ animationDelay: `${index * 60}ms` }}
-      className="group rounded-cards border border-ice-white/14 bg-carbon p-6 opacity-0 animate-slide-up [animation-fill-mode:forwards] transition-colors duration-200 hover:border-ice-white/30"
+      className="group accent-top glow-card relative overflow-hidden rounded-cards border border-ice-white/14 bg-carbon p-6 opacity-0 animate-slide-up [animation-fill-mode:forwards]"
     >
       <div className="flex items-start justify-between">
         <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-electric-cobalt">
           /{def.code}
         </span>
-        <def.icon className="h-3.5 w-3.5 text-ice-white/30" strokeWidth={1.5} />
+        <span className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-ice-white/14 bg-ice-white/[0.02] transition-colors duration-200 group-hover:border-electric-cobalt/40">
+          <def.icon
+            className="h-3.5 w-3.5 text-ice-white/40 transition-colors duration-200 group-hover:text-electric-cobalt"
+            strokeWidth={1.5}
+          />
+        </span>
       </div>
-      <div className="mt-8 text-[48px] leading-[1] tracking-[-0.03em] tabular-nums text-ice-white">
+      <div className="mt-8 text-[44px] leading-[1] tracking-[-0.03em] tabular-nums text-gradient">
         {animated.toLocaleString("ru-RU")}
       </div>
       <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
@@ -74,7 +79,7 @@ export default function DashboardPage() {
           </span>
         </div>
         <h1 className="text-[64px] leading-[1.04] tracking-[-0.03em] text-ice-white">
-          сводка <span className="text-electric-cobalt">системы</span>.
+          сводка <span className="text-gradient">системы</span>.
         </h1>
         <p className="mt-5 max-w-xl font-mono text-[12px] leading-[1.8] tracking-[0.06em] text-fog-text">
           сигнал в реальном времени из сети доступа — устройства, люди, события.
@@ -130,9 +135,9 @@ export default function DashboardPage() {
             <div className="flex h-56 items-end justify-around gap-3">
               {data.weekly.map((w, i) => (
                 <div key={w.date} className="flex flex-1 flex-col items-center gap-3">
-                  <div className="flex w-full flex-1 items-end justify-center gap-1.5">
+                  <div className="group/bar flex w-full flex-1 items-end justify-center gap-1.5 border-b border-ice-white/8">
                     <div
-                      className="w-3 origin-bottom bg-electric-cobalt transition-all duration-200 animate-bar-grow"
+                      className="w-3.5 origin-bottom rounded-t-[3px] bg-gradient-to-t from-electric-cobalt/25 to-electric-cobalt shadow-[0_0_18px_-4px_rgba(31,88,242,0.85)] transition-all duration-200 animate-bar-grow group-hover/bar:brightness-125"
                       style={{
                         height: `${(w.came / weeklyMax) * 100}%`,
                         animationDelay: `${500 + i * 60}ms`,
@@ -140,7 +145,7 @@ export default function DashboardPage() {
                       title={`arrived: ${w.came}`}
                     />
                     <div
-                      className="w-3 origin-bottom bg-signal-orange transition-all duration-200 animate-bar-grow"
+                      className="w-3.5 origin-bottom rounded-t-[3px] bg-gradient-to-t from-signal-orange/25 to-signal-orange shadow-[0_0_18px_-4px_rgba(255,65,5,0.8)] transition-all duration-200 animate-bar-grow group-hover/bar:brightness-125"
                       style={{
                         height: `${(w.late / weeklyMax) * 100}%`,
                         animationDelay: `${500 + i * 60 + 30}ms`,

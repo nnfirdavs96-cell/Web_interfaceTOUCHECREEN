@@ -140,6 +140,81 @@ a:hover {
 .wireframe-frame::before { top: -3px; left: -3px; }
 .wireframe-frame::after  { top: -3px; right: -3px; }
 
+/* ============================================================= */
+/* Atlantic depth system — ambient glow, premium cards, gradients */
+/* ============================================================= */
+
+/* Ambient aurora — sits behind app content, never scrolls */
+.app-aurora {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(55% 45% at 12% -5%, rgba(31, 88, 242, 0.12), transparent 70%),
+    radial-gradient(45% 45% at 105% 110%, rgba(255, 65, 5, 0.07), transparent 70%);
+}
+.app-aurora::after {
+  /* faint dot-grid texture */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(216, 234, 255, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(70% 60% at 50% 0%, #000 0%, transparent 80%);
+  -webkit-mask-image: radial-gradient(70% 60% at 50% 0%, #000 0%, transparent 80%);
+}
+html.light .app-aurora {
+  background:
+    radial-gradient(55% 45% at 12% -5%, rgba(31, 88, 242, 0.10), transparent 70%),
+    radial-gradient(45% 45% at 105% 110%, rgba(255, 65, 5, 0.05), transparent 70%);
+}
+html.light .app-aurora::after {
+  background-image: radial-gradient(rgba(11, 21, 48, 0.05) 1px, transparent 1px);
+}
+
+/* Premium card — cobalt halo + lift on hover */
+.glow-card {
+  position: relative;
+  transition: border-color 0.2s ease,
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+}
+.glow-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(31, 88, 242, 0.5);
+  box-shadow: 0 0 0 1px rgba(31, 88, 242, 0.22),
+    0 18px 44px -20px rgba(31, 88, 242, 0.6);
+}
+
+/* Gradient numerals / hero accents — ice-white → electric cobalt */
+.text-gradient {
+  background: linear-gradient(135deg, #ffffff 0%, #9fb4ff 50%, #1f58f2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+html.light .text-gradient {
+  background: linear-gradient(135deg, #0b1530 0%, #2f4bbf 55%, #1f58f2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Animated top hairline — brightens to a cobalt sweep on hover */
+.accent-top::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, transparent);
+  transition: background 0.3s ease;
+}
+.accent-top:hover::before {
+  background: linear-gradient(90deg, transparent, #1f58f2 50%, transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
