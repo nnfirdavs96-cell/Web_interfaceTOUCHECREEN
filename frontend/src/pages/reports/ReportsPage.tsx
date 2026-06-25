@@ -101,6 +101,7 @@ export default function ReportsPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="/ табель · экспорт"
         title="Отчёты"
         subtitle="Сводный табель рабочего времени с фильтрами и экспортом"
         actions={

@@ -126,6 +126,7 @@ export default function UsersPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="/ доступ · учётки"
         title="Пользователи системы"
         subtitle="Учётные записи администраторов, HR, бухгалтерии и наблюдателей"
         actions={

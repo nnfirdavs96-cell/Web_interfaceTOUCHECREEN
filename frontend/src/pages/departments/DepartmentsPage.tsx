@@ -84,6 +84,7 @@ export default function DepartmentsPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="/ структура · иерархия"
         title="Отделы"
         subtitle="Иерархическая структура подразделений организации"
         actions={

@@ -116,6 +116,7 @@ export default function AttendancePage() {
   return (
     <div>
       <PageHeader
+        eyebrow="/ поток · события"
         title="Приход / уход"
         subtitle="События прохода и пересчёт табеля"
         actions={
