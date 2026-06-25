@@ -14,9 +14,13 @@ import { useMemo, useState } from "react";
 import { branchesApi } from "@/api/branches";
 import { devicesApi } from "@/api/devices";
 import type { Device } from "@/api/types";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Drawer } from "@/components/ui/Drawer";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Field, Input } from "@/components/ui/Input";
+import { Loading } from "@/components/ui/Loading";
 import { PageHeader } from "@/components/ui/PageHeader";
 
 const PURPOSE_LABEL: Record<string, string> = {
@@ -161,23 +165,16 @@ export default function DevicesPage() {
         }
       />
 
-      {isLoading && (
-        <div className="py-10 text-center font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
-          Загрузка…
-        </div>
-      )}
+      {isLoading && <Loading />}
       {!isLoading && (data?.items.length ?? 0) === 0 && (
-        <div className="rounded-cards border border-dashed border-ice-white/14 bg-carbon py-16 text-center font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
+        <EmptyState icon={<Cpu className="h-6 w-6" strokeWidth={1.5} />}>
           Устройств пока нет. Нажмите «Добавить устройство».
-        </div>
+        </EmptyState>
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {data?.items.map((d) => (
-          <div
-            key={d.id}
-            className="rounded-cards border border-ice-white/14 bg-carbon p-6 transition-colors hover:border-ice-white/30"
-          >
+          <Card key={d.id} hoverable>
             <div className="mb-5 flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-ice-white/30">
@@ -194,13 +191,13 @@ export default function DevicesPage() {
                 </div>
               </div>
               {d.online ? (
-                <span className="flex shrink-0 items-center gap-1.5 border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-emerald-400">
-                  <Wifi className="h-3 w-3" strokeWidth={1.5} /> online
-                </span>
+                <Badge tone="success" icon={<Wifi className="h-3 w-3" strokeWidth={1.5} />}>
+                  online
+                </Badge>
               ) : (
-                <span className="flex shrink-0 items-center gap-1.5 border border-ice-white/20 bg-slate/40 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-fog-text">
-                  <WifiOff className="h-3 w-3" strokeWidth={1.5} /> offline
-                </span>
+                <Badge tone="neutral" icon={<WifiOff className="h-3 w-3" strokeWidth={1.5} />}>
+                  offline
+                </Badge>
               )}
             </div>
 
@@ -273,7 +270,7 @@ export default function DevicesPage() {
                 <Trash2 className="h-3.5 w-3.5 text-red-500" />
               </Button>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 

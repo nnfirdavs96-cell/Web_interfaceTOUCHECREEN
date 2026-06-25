@@ -19,3 +19,6 @@ dist/
 # Local
 *.log
 *.sqlite3
+
+# build artifacts
+*.tsbuildinfo
