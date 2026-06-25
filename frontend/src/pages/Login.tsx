@@ -149,7 +149,7 @@ export default function LoginPage() {
           <div className="relative flex h-9 w-9 items-center justify-center border border-ice-white/40">
             <div className="absolute h-2 w-2 bg-electric-cobalt" />
           </div>
-          <span className="text-body tracking-[-0.01em] text-ice-white">ant access</span>
+          <span className="text-body tracking-[-0.01em] text-ice-white">Access</span>
         </div>
         <nav className="hidden items-center gap-8 md:flex">
           {["главная", "подход", "устройства", "команда", "истории"].map((l) => (
@@ -257,7 +257,7 @@ export default function LoginPage() {
           </div>
 
           <p className="mt-5 text-center font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
-            ant access · полночная обсерватория
+            Access · полночная обсерватория
           </p>
         </div>
       </main>
