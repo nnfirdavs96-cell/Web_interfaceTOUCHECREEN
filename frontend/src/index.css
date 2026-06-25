@@ -45,7 +45,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Light — inverted observatory: ice canvas, navy text, electric cobalt accent */
+/* ============================================================
+ * Light — inverted observatory.
+ * Ice canvas (#f4f6fb), white cards, deep navy text (#0b1530),
+ * electric cobalt accent preserved. EVERY dark-surface utility
+ * needs an override here — Atlantic dark is the default and
+ * leaks through if not covered.
+ * ============================================================ */
 html.light {
   background: #f4f6fb;
   color-scheme: light;
@@ -54,32 +60,126 @@ html.light body {
   background: #f4f6fb;
   color: #0b1530;
 }
-html.light .bg-void-black { background-color: #f4f6fb !important; }
-html.light .bg-carbon { background-color: #ffffff !important; }
-html.light .bg-carbon\/40 { background-color: rgba(255,255,255,0.6) !important; }
-html.light .bg-carbon\/80 { background-color: rgba(255,255,255,0.9) !important; }
-html.light .bg-slate { background-color: #eef1f7 !important; }
-html.light .bg-slate\/30 { background-color: rgba(238,241,247,0.6) !important; }
-html.light .bg-slate\/40 { background-color: rgba(238,241,247,0.8) !important; }
-html.light .bg-slate\/60 { background-color: #eef1f7 !important; }
+
+/* --- Surfaces / canvases --- */
+html.light .bg-void-black,
+html.light .bg-void-black\/80,
+html.light .bg-void-black\/90,
+html.light .bg-void-black\/95,
+html.light .bg-void-black\/70,
+html.light .bg-void-black\/60 { background-color: #f4f6fb !important; }
+
+html.light .bg-carbon,
+html.light .bg-carbon\/40,
+html.light .bg-carbon\/60,
+html.light .bg-carbon\/80,
+html.light .bg-carbon\/90 { background-color: #ffffff !important; }
+
+html.light .bg-slate,
+html.light .bg-slate\/30,
+html.light .bg-slate\/40,
+html.light .bg-slate\/60,
+html.light .bg-slate\/80 { background-color: #eef1f7 !important; }
+
+html.light .bg-graphite { background-color: #e7ecf3 !important; }
+
+/* --- Text ladder (all opacities) --- */
 html.light .text-ice-white { color: #0b1530 !important; }
 html.light .text-ice-white\/90 { color: rgba(11,21,48,0.9) !important; }
+html.light .text-ice-white\/80 { color: rgba(11,21,48,0.8) !important; }
 html.light .text-ice-white\/70 { color: rgba(11,21,48,0.7) !important; }
 html.light .text-ice-white\/60 { color: rgba(11,21,48,0.6) !important; }
-html.light .text-ice-white\/40 { color: rgba(11,21,48,0.45) !important; }
-html.light .text-ice-white\/30 { color: rgba(11,21,48,0.35) !important; }
+html.light .text-ice-white\/50 { color: rgba(11,21,48,0.5) !important; }
+html.light .text-ice-white\/40 { color: rgba(11,21,48,0.5) !important; }
+html.light .text-ice-white\/30 { color: rgba(11,21,48,0.4) !important; }
 html.light .text-fog-text { color: #6c757f !important; }
-html.light .border-ice-white\/14 { border-color: rgba(11,21,48,0.12) !important; }
+
+/* --- Borders (all opacities) --- */
 html.light .border-ice-white\/8 { border-color: rgba(11,21,48,0.08) !important; }
+html.light .border-ice-white\/14 { border-color: rgba(11,21,48,0.12) !important; }
 html.light .border-ice-white\/15 { border-color: rgba(11,21,48,0.14) !important; }
 html.light .border-ice-white\/18 { border-color: rgba(11,21,48,0.16) !important; }
 html.light .border-ice-white\/20 { border-color: rgba(11,21,48,0.2) !important; }
 html.light .border-ice-white\/30 { border-color: rgba(11,21,48,0.3) !important; }
-html.light .border-ice-white\/40 { border-color: rgba(11,21,48,0.4) !important; }
+html.light .border-ice-white\/40 { border-color: rgba(11,21,48,0.45) !important; }
+
 html.light .bg-ice-white\/5 { background-color: rgba(11,21,48,0.04) !important; }
+html.light .bg-ice-white\/\[0\.02\] { background-color: rgba(11,21,48,0.03) !important; }
+html.light .bg-ice-white\/8 { background-color: rgba(11,21,48,0.06) !important; }
+
+/* --- Typography defaults --- */
 html.light h1, html.light h2, html.light h3, html.light h4 { color: #0b1530; }
+html.light a { color: #0b1530; }
+html.light a:hover { color: #1f58f2; }
+
+/* --- Scrollbar / wireframe motif --- */
 html.light ::-webkit-scrollbar-thumb { background: rgba(11,21,48,0.18); }
 html.light .wireframe-frame { border-color: rgba(11,21,48,0.2); }
+
+/* --- Premium depth utilities (set by parallel session) --- */
+html.light .app-aurora {
+  background:
+    radial-gradient(40% 30% at 15% 20%, rgba(31,88,242,0.10), transparent 60%),
+    radial-gradient(35% 25% at 85% 75%, rgba(255,65,5,0.06), transparent 60%) !important;
+  opacity: 0.8;
+}
+html.light .glow-card {
+  background: #ffffff !important;
+  border-color: rgba(11,21,48,0.10) !important;
+  box-shadow: 0 1px 2px rgba(11,21,48,0.04), 0 8px 32px -8px rgba(31,88,242,0.10) !important;
+}
+html.light .glow-card:hover {
+  border-color: rgba(31,88,242,0.30) !important;
+  box-shadow: 0 1px 2px rgba(11,21,48,0.04), 0 12px 40px -8px rgba(31,88,242,0.18) !important;
+}
+html.light .text-gradient {
+  background: linear-gradient(180deg, #0b1530 0%, #1f58f2 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+html.light .accent-top::before { background: linear-gradient(90deg, transparent, #1f58f2, transparent) !important; }
+
+/* --- Gradient layers (active sidebar item, avatars, etc.) --- */
+html.light .from-electric-cobalt\/15 { --tw-gradient-from: rgba(31,88,242,0.10) !important; }
+html.light .via-electric-cobalt\/5 { --tw-gradient-via: rgba(31,88,242,0.05) !important; }
+html.light .from-electric-cobalt\/25 { --tw-gradient-from: rgba(31,88,242,0.18) !important; }
+
+/* --- Backdrop blur surfaces — softer in light --- */
+html.light .backdrop-blur-md,
+html.light .backdrop-blur-xl { backdrop-filter: blur(8px); }
+
+/* --- DataTable header bg in light --- */
+html.light table thead { background: #eef1f7 !important; }
+
+/* --- Inputs / selects in light --- */
+html.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+html.light select,
+html.light textarea {
+  background-color: #ffffff !important;
+  color: #0b1530 !important;
+  border-color: rgba(11,21,48,0.14) !important;
+}
+html.light input::placeholder, html.light textarea::placeholder { color: #94a3b8 !important; }
+html.light input:focus,
+html.light select:focus,
+html.light textarea:focus {
+  border-color: #1f58f2 !important;
+}
+html.light option { background: #ffffff; color: #0b1530; }
+
+/* --- Status badge text in light (legacy emerald-700 etc.) --- */
+html.light .text-emerald-400 { color: #047857 !important; }
+html.light .text-emerald-700 { color: #047857 !important; }
+html.light .text-orange-400, html.light .text-orange-700 { color: #c2410c !important; }
+html.light .text-red-400, html.light .text-red-700 { color: #b91c1c !important; }
+html.light .text-amber-400, html.light .text-amber-700 { color: #b45309 !important; }
+html.light .text-sky-400, html.light .text-sky-700 { color: #0369a1 !important; }
+html.light .text-fog-text { color: #6c757f !important; }
+html.light .text-signal-orange { color: #c2410c !important; }
+html.light .border-signal-orange { border-color: #c2410c !important; }
+html.light .hover\:bg-signal-orange\/10:hover { background-color: rgba(194,65,12,0.08) !important; }
 
 /* Scrollbar — ice-white at low opacity on void */
 ::-webkit-scrollbar {
