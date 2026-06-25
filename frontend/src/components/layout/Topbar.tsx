@@ -1,4 +1,4 @@
-import { Globe, LogOut, Menu, Moon, Search, Sun, X } from "lucide-react";
+import { Globe, LogOut, Moon, Search, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -23,12 +23,7 @@ function routeFor(q: string): string {
   return "/employees";
 }
 
-interface Props {
-  onToggleSidebar?: () => void;
-  sidebarOpen?: boolean;
-}
-
-export function Topbar({ onToggleSidebar, sidebarOpen }: Props = {}) {
+export function Topbar() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
@@ -74,15 +69,6 @@ export function Topbar({ onToggleSidebar, sidebarOpen }: Props = {}) {
 
   return (
     <header className="sticky top-0 z-20 flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-ice-white/14 bg-void-black/90 px-4 backdrop-blur-md md:px-6">
-      {onToggleSidebar && (
-        <button
-          onClick={onToggleSidebar}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-inputs border border-ice-white/14 text-ice-white/80 transition-colors hover:border-electric-cobalt/50 hover:text-electric-cobalt"
-          aria-label={sidebarOpen ? "Скрыть меню" : "Показать меню"}
-        >
-          {sidebarOpen ? <X className="h-4 w-4" strokeWidth={1.5} /> : <Menu className="h-4 w-4" strokeWidth={1.5} />}
-        </button>
-      )}
       <form onSubmit={submitSearch} className="relative max-w-md flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ice-white/40" strokeWidth={1.5} />
         <input
