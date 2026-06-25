@@ -10,16 +10,17 @@
 
 1. [Возможности](#возможности)
 2. [Технологический стек](#технологический-стек)
-3. [Структура репозитория](#структура-репозитория)
-4. [Быстрый запуск](#быстрый-запуск)
-5. [Прогресс по этапам](#прогресс-по-этапам)
-6. [Что протестировано на реальном устройстве](#что-протестировано-на-реальном-устройстве)
-7. [Ограничения прошивки V4.48](#ограничения-прошивки-v448)
-8. [Workflow администратора](#workflow-администратора)
-9. [Workflow регистрации сотрудника](#workflow-регистрации-сотрудника)
-10. [API / RBAC / Hikvision-обвязка](#api--rbac--hikvision-обвязка)
-11. [Что осталось](#что-осталось)
-12. [Полезные команды](#полезные-команды)
+3. [Дизайн-система Atlantic.vc](#дизайн-система-atlanticvc)
+4. [Структура репозитория](#структура-репозитория)
+5. [Быстрый запуск](#быстрый-запуск)
+6. [Прогресс по этапам](#прогресс-по-этапам)
+7. [Что протестировано на реальном устройстве](#что-протестировано-на-реальном-устройстве)
+8. [Ограничения прошивки V4.48](#ограничения-прошивки-v448)
+9. [Workflow администратора](#workflow-администратора)
+10. [Workflow регистрации сотрудника](#workflow-регистрации-сотрудника)
+11. [API / RBAC / Hikvision-обвязка](#api--rbac--hikvision-обвязка)
+12. [Что осталось](#что-осталось)
+13. [Полезные команды](#полезные-команды)
 
 ---
 
@@ -43,6 +44,7 @@
 - ✅ RBAC: 7 ролей × 24 разрешения.
 - ✅ Аудит-лог всех write-операций (JSONB before/after).
 - ✅ Тёмная/светлая тема, локализация RU/EN/UZ.
+- ✅ **Дизайн-система Atlantic.vc** — «полночная обсерватория»: ambient-свечение, glow-карточки, градиентные метрики, премиум микро-взаимодействия (см. раздел [Дизайн-система](#дизайн-система-atlanticvc)).
 - ⏳ Интеграции с 1С / биллингом (этап 6 — отложен по запросу заказчика).
 
 ---
@@ -51,9 +53,32 @@
 
 **Backend:** Python 3.12, FastAPI, PostgreSQL 16, Redis 7, SQLAlchemy 2.0 + Alembic, asyncio (фоновые задачи), httpx + subprocess curl (для специфики Hikvision), JWT, bcrypt, openpyxl, reportlab, cryptography (Fernet).
 
-**Frontend:** React 18 + TypeScript + Vite, Tailwind CSS, TanStack Query, Zustand, react-i18next, lucide-react.
+**Frontend:** React 18 + TypeScript + Vite, Tailwind CSS, TanStack Query, Zustand, react-i18next, lucide-react. Дизайн-система **Atlantic.vc** + скилл [UI/UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) (подключён через `.claude/settings.json`).
 
 **Infra:** Docker Compose, Nginx (reverse-proxy + WebSocket).
+
+---
+
+## Дизайн-система Atlantic.vc
+
+Единый визуальный язык — «полночная обсерватория»: чёрный холст, ледяной текст (`#d8eaff`), акцент electric-cobalt (`#1f58f2`) и сигнальный orange (`#ff4105`), типографика Space Grotesk + JetBrains Mono, глубина за счёт ступенчатых поверхностей, а не теней.
+
+Разработка ведётся с подключённым скиллом **[UI/UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)** (маркетплейс + плагин прописаны в `.claude/settings.json`) — он применяет pre-delivery чеклист: SVG-иконки (lucide), `cursor-pointer` на всех кликабельных, hover-переходы 150–300 мс, видимый focus-ring, поддержка `prefers-reduced-motion`, контраст и адаптивность.
+
+**Система глубины** (`src/index.css`):
+
+| Слой | Класс | Что делает |
+|---|---|---|
+| Ambient-фон | `.app-aurora` | Радиальное cobalt/orange свечение + masked dot-grid за всем контентом (в `Shell`) |
+| Премиум-карточка | `.glow-card` | Кобальтовый ореол + подъём на 3px при наведении |
+| Градиент-текст | `.text-gradient` | Ice-white → cobalt для метрик и заголовков |
+| Анимированная грань | `.accent-top` | Верхний hairline пробегает кобальтовым лучом на hover |
+
+Все слои имеют override'ы для светлой темы и уважают `prefers-reduced-motion`.
+
+**Переиспользуемые примитивы** (`src/components/ui/`): `Button`, `Input`/`Textarea`/`Field`, `Drawer`, `DataTable`, `PageHeader`, `Card` (+ `glow`/`hoverable`), `Badge` (тоны success/neutral/accent/warning/danger), `EmptyState`, `Loading`.
+
+**Где видно:** дашборд (glow KPI-карточки с градиентными цифрами, недельная диаграмма со светящимися столбцами), сайдбар (стеклянный фон, светящийся active-индикатор), топбар (cobalt-аватар), логин (particle-cloud + градиентный герой).
 
 ---
 
@@ -109,7 +134,8 @@ Web_interfaceTOUCHECREEN/
 │   ├── src/
 │   │   ├── api/                    # axios клиенты по модулям
 │   │   ├── components/
-│   │   │   ├── ui/                 # Button, Input, Drawer, DataTable, PageHeader
+│   │   │   ├── ui/                 # Button, Input, Drawer, DataTable, PageHeader,
+│   │   │   │                       # Card (glow), Badge, EmptyState, Loading
 │   │   │   ├── layout/             # Sidebar, Topbar, Shell
 │   │   │   └── ProtectedRoute.tsx
 │   │   ├── pages/
@@ -127,7 +153,7 @@ Web_interfaceTOUCHECREEN/
 │   │   ├── stores/                 # zustand (auth)
 │   │   ├── lib/                    # cn(), utils
 │   │   └── router.tsx
-│   ├── tailwind.config.ts          # brand=#2563eb, status colors
+│   ├── tailwind.config.ts          # Atlantic.vc токены (ice-white/cobalt/orange), radii, motion
 │   ├── vite.config.ts
 │   ├── Dockerfile                  # multi-stage: build → nginx
 │   └── nginx.conf                  # /api/ proxy + WebSocket upgrade
