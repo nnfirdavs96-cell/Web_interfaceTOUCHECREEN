@@ -4,6 +4,8 @@ import {
   Building2,
   Calendar,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   Cpu,
   FileBarChart,
@@ -29,15 +31,10 @@ interface NavItem {
 
 interface NavSection {
   id: string;
-  heading: string;        // Mono uppercase label
+  heading: string;
   items: NavItem[];
 }
 
-/**
- * Sidebar nav grouped into editorial sections.
- * The first group has no heading (dashboard sits at the top alone).
- * Section state persists in localStorage under `ant-sidebar-<id>`.
- */
 const SECTIONS: NavSection[] = [
   {
     id: "overview",
@@ -84,7 +81,7 @@ const SECTIONS: NavSection[] = [
   },
 ];
 
-function loadCollapsed(): Record<string, boolean> {
+function loadSectionState(): Record<string, boolean> {
   try {
     return JSON.parse(localStorage.getItem("ant-sidebar-sections") ?? "{}");
   } catch {
@@ -92,85 +89,116 @@ function loadCollapsed(): Record<string, boolean> {
   }
 }
 
+function loadPinned(): boolean {
+  try {
+    return localStorage.getItem("ant-sidebar-pinned") !== "false";
+  } catch {
+    return true;
+  }
+}
+
 export function Sidebar() {
   const { t } = useTranslation();
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(loadCollapsed);
+  const [sectionState, setSectionState] = useState<Record<string, boolean>>(loadSectionState);
+  const [pinned, setPinned] = useState(loadPinned);
 
-  // Auto-expand the section containing the active route
   useEffect(() => {
     const active = SECTIONS.find((s) =>
       s.items.some((i) => i.end ? location.pathname === i.to : location.pathname.startsWith(i.to)),
     );
-    if (active && collapsed[active.id]) {
-      setCollapsed((prev) => ({ ...prev, [active.id]: false }));
+    if (active && sectionState[active.id]) {
+      setSectionState((prev) => ({ ...prev, [active.id]: false }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
   useEffect(() => {
     try {
-      localStorage.setItem("ant-sidebar-sections", JSON.stringify(collapsed));
-    } catch {
-      // ignore
-    }
-  }, [collapsed]);
+      localStorage.setItem("ant-sidebar-sections", JSON.stringify(sectionState));
+    } catch { /* ignore */ }
+  }, [sectionState]);
 
-  const toggle = (id: string) => setCollapsed((p) => ({ ...p, [id]: !p[id] }));
+  useEffect(() => {
+    try {
+      localStorage.setItem("ant-sidebar-pinned", String(pinned));
+    } catch { /* ignore */ }
+  }, [pinned]);
+
+  const toggleSection = (id: string) => setSectionState((p) => ({ ...p, [id]: !p[id] }));
 
   return (
     <aside
-      className="relative z-10 hidden h-full w-64 shrink-0 flex-col border-r border-ice-white/14 bg-void-black/80 backdrop-blur-xl md:flex"
+      className={cn(
+        "relative z-10 hidden shrink-0 flex-col border-r border-ice-white/14 bg-void-black/80 backdrop-blur-xl transition-all duration-300 ease-out md:flex",
+        pinned ? "w-64" : "w-16",
+      )}
     >
       {/* Brand mark */}
-      <div className="flex h-[72px] items-center gap-3 border-b border-ice-white/14 px-5">
-        <div className="relative flex h-9 w-9 items-center justify-center border border-ice-white/40">
+      <div className={cn(
+        "flex h-[72px] items-center border-b border-ice-white/14 transition-all duration-300",
+        pinned ? "gap-3 px-5" : "justify-center px-2",
+      )}>
+        <div className="relative flex h-9 w-9 shrink-0 items-center justify-center border border-ice-white/40">
           <div className="absolute h-2 w-2 bg-electric-cobalt shadow-[0_0_10px_rgba(31,88,242,0.9)]" />
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-body-sm tracking-[-0.01em] text-ice-white">
-            {t("app.title")}
+        {pinned && (
+          <div className="min-w-0 flex-1 animate-fade-in">
+            <div className="truncate text-body-sm tracking-[-0.01em] text-ice-white">
+              {t("app.title")}
+            </div>
+            <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
+              v0.7 — dev
+            </div>
           </div>
-          <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
-            v0.7 — dev
-          </div>
-        </div>
+        )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
+      <nav className={cn(
+        "flex-1 overflow-y-auto py-4 transition-all duration-300",
+        pinned ? "px-3" : "px-1.5",
+      )}>
         {SECTIONS.map((section, sIdx) => {
-          const isCollapsed = collapsed[section.id] ?? false;
+          const isCollapsed = sectionState[section.id] ?? false;
           return (
             <div key={section.id} className={cn(sIdx > 0 && "mt-5")}>
-              <button
-                onClick={() => toggle(section.id)}
-                className="group flex w-full items-center justify-between px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text transition-colors hover:text-electric-cobalt"
-                aria-expanded={!isCollapsed}
-              >
-                <span>{section.heading}</span>
-                <ChevronDown
-                  className={cn(
-                    "h-3 w-3 transition-transform duration-200",
-                    isCollapsed && "-rotate-90",
-                  )}
-                  strokeWidth={2}
-                />
-              </button>
+              {pinned ? (
+                <button
+                  onClick={() => toggleSection(section.id)}
+                  className="group flex w-full items-center justify-between px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text transition-colors hover:text-electric-cobalt"
+                  aria-expanded={!isCollapsed}
+                >
+                  <span>{section.heading}</span>
+                  <ChevronDown
+                    className={cn(
+                      "h-3 w-3 transition-transform duration-200",
+                      isCollapsed && "-rotate-90",
+                    )}
+                    strokeWidth={2}
+                  />
+                </button>
+              ) : (
+                sIdx > 0 && <div className="mx-2 border-t border-ice-white/10" />
+              )}
 
-              {!isCollapsed && (
-                <ul className="mt-1 space-y-0.5 animate-fade-in">
+              {(pinned ? !isCollapsed : true) && (
+                <ul className={cn("mt-1 space-y-0.5", pinned && "animate-fade-in")}>
                   {section.items.map((item, i) => (
                     <li
                       key={item.to}
-                      className="opacity-0 animate-slide-right [animation-fill-mode:forwards]"
-                      style={{ animationDelay: `${i * 25}ms` }}
+                      className={cn(pinned && "opacity-0 animate-slide-right [animation-fill-mode:forwards]")}
+                      style={pinned ? { animationDelay: `${i * 25}ms` } : undefined}
                     >
                       <NavLink
                         to={item.to}
                         end={item.end}
+                        title={!pinned ? t(item.labelKey) : undefined}
                         className={({ isActive }) =>
                           cn(
-                            "group relative flex items-center gap-3 rounded-inputs px-3 py-2 font-mono text-[11px] uppercase tracking-[0.12em] transition-all duration-150",
+                            "group relative flex items-center rounded-inputs transition-all duration-150",
+                            pinned
+                              ? "gap-3 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.12em]"
+                              : "justify-center px-0 py-2.5",
                             isActive
                               ? "bg-gradient-to-r from-electric-cobalt/15 via-electric-cobalt/5 to-transparent text-ice-white"
                               : "text-ice-white/60 hover:bg-slate/40 hover:text-ice-white",
@@ -189,7 +217,7 @@ export function Sidebar() {
                               )}
                               strokeWidth={1.5}
                             />
-                            {t(item.labelKey)}
+                            {pinned && t(item.labelKey)}
                           </>
                         )}
                       </NavLink>
@@ -202,8 +230,25 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t border-ice-white/14 p-4 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text">
-        © 2026 — ANT ACCESS
+      {/* Collapse / expand toggle */}
+      <div className="border-t border-ice-white/14">
+        <button
+          onClick={() => setPinned((v) => !v)}
+          className={cn(
+            "flex w-full items-center gap-2 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-fog-text transition-colors hover:text-electric-cobalt",
+            pinned ? "px-5" : "justify-center px-2",
+          )}
+          aria-label={pinned ? "Свернуть меню" : "Развернуть меню"}
+        >
+          {pinned ? (
+            <>
+              <ChevronLeft className="h-3.5 w-3.5" strokeWidth={1.5} />
+              <span>свернуть</span>
+            </>
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.5} />
+          )}
+        </button>
       </div>
     </aside>
   );
