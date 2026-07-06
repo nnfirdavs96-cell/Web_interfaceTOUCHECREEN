@@ -31,9 +31,15 @@ const PURPOSE_LABEL: Record<string, string> = {
   main: "Главный вход",
 };
 
+const VENDOR_LABEL: Record<string, string> = {
+  hikvision: "Hikvision",
+  zkteco: "ZKTeco",
+};
+
 interface Form {
   branch_id?: string | null;
   name?: string;
+  vendor?: string;
   type?: string;
   ip?: string;
   port?: number;
@@ -125,6 +131,7 @@ export default function DevicesPage() {
     setEditing(null);
     setForm({
       port: 80,
+      vendor: "hikvision",
       type: "multi",
       purpose: "entry",
       username: "admin",
@@ -137,6 +144,7 @@ export default function DevicesPage() {
     setForm({
       branch_id: d.branch_id,
       name: d.name,
+      vendor: d.vendor ?? "hikvision",
       type: d.type,
       ip: d.ip,
       port: d.port,
@@ -203,6 +211,12 @@ export default function DevicesPage() {
             </div>
 
             <dl className="mb-5 space-y-1.5 font-mono text-[10px] uppercase tracking-[0.12em]">
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-fog-text">Вендор</dt>
+                <dd className="truncate text-ice-white/90">
+                  {VENDOR_LABEL[d.vendor] ?? d.vendor ?? "hikvision"}
+                </dd>
+              </div>
               <div className="flex items-baseline justify-between gap-3">
                 <dt className="text-fog-text">Адрес</dt>
                 <dd className="truncate text-ice-white/90">{d.ip}:{d.port}</dd>
@@ -304,6 +318,25 @@ export default function DevicesPage() {
               value={form.name ?? ""}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
+          </Field>
+          <Field label="Производитель">
+            <select
+              value={form.vendor ?? "hikvision"}
+              onChange={(e) => {
+                const vendor = e.target.value;
+                // Подставляем типовой порт вендора, если пользователь не менял его вручную.
+                const defaultPort = vendor === "zkteco" ? 4370 : 80;
+                setForm({
+                  ...form,
+                  vendor,
+                  port: form.port === 80 || form.port === 4370 ? defaultPort : form.port,
+                });
+              }}
+              className="w-full rounded-inputs border border-ice-white/14 bg-carbon/60 px-3 py-2 text-body-sm text-ice-white outline-none hover:border-ice-white/30 focus:border-electric-cobalt"
+            >
+              <option value="hikvision">Hikvision (ISAPI)</option>
+              <option value="zkteco">ZKTeco (в разработке)</option>
+            </select>
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="IP-адрес" required>

@@ -16,7 +16,7 @@ from xml.etree import ElementTree as ET
 import httpx
 from httpx import DigestAuth
 
-from app.services.hikvision.base import DeviceConn, DeviceInfo, EnrollResult, RawEvent
+from app.services.devices.base import DeviceConn, DeviceInfo, EnrollResult, RawEvent
 
 log = logging.getLogger("hikvision.isapi")
 

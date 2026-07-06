@@ -50,6 +50,12 @@ def create_app() -> FastAPI:
                     "timezone_offset INTEGER NOT NULL DEFAULT 5"
                 )
             )
+            conn.execute(
+                text(
+                    "ALTER TABLE devices ADD COLUMN IF NOT EXISTS "
+                    "vendor VARCHAR(32) NOT NULL DEFAULT 'hikvision'"
+                )
+            )
 
         from app.db.seed import run as seed_run
 

@@ -23,7 +23,7 @@ from app.schemas.employee import (
     SyncToDeviceRequest,
 )
 from app.services import audit
-from app.services.hikvision import HikvisionService
+from app.services.devices import DeviceService
 
 router = APIRouter(prefix="/employees", tags=["employees"])
 
@@ -89,7 +89,7 @@ async def _autosync_to_devices(db: Session, emp: Employee, action: str = "upsert
     full_name = " ".join(filter(None, [emp.last_name, emp.first_name, emp.middle_name]))
     for device in devices:
         try:
-            client = HikvisionService.client_for(device)
+            client = DeviceService.driver_for(device)
             if action == "delete":
                 await client.delete_user(emp.external_id)
             else:
@@ -292,7 +292,7 @@ async def sync_to_device(
         )
     device = _get_device(db, body.device_id)
     full_name = " ".join(filter(None, [emp.last_name, emp.first_name, emp.middle_name]))
-    client = HikvisionService.client_for(device)
+    client = DeviceService.driver_for(device)
     res = await client.upsert_user(emp.external_id, full_name)
 
     audit.log(
@@ -322,7 +322,7 @@ async def enroll_fingerprint(
     if not emp.external_id:
         raise HTTPException(status_code=400, detail="Сначала укажите external_id сотрудника")
     device = _get_device(db, body.device_id)
-    client = HikvisionService.client_for(device)
+    client = DeviceService.driver_for(device)
     res = await client.capture_fingerprint(emp.external_id, body.finger_no)
     if res.success:
         _save_credential(db, emp.id, device.id, "fingerprint", res.value_ref)
@@ -356,7 +356,7 @@ async def capture_face(
     if not emp.external_id:
         raise HTTPException(status_code=400, detail="Сначала укажите external_id сотрудника")
     device = _get_device(db, body.device_id)
-    client = HikvisionService.client_for(device)
+    client = DeviceService.driver_for(device)
 
     full_name = " ".join(filter(None, [emp.last_name, emp.first_name, emp.middle_name]))
     res = await client.capture_face(emp.external_id)
@@ -405,7 +405,7 @@ async def enroll_face(
     if len(image_bytes) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Файл слишком большой (>5MB)")
     full_name = " ".join(filter(None, [emp.last_name, emp.first_name, emp.middle_name]))
-    client = HikvisionService.client_for(device)
+    client = DeviceService.driver_for(device)
     res = await client.upload_face(emp.external_id, image_bytes, full_name)
     if res.success:
         _save_credential(db, emp.id, device.id, "face", res.value_ref)
@@ -439,7 +439,7 @@ async def capture_card(
     if not emp.external_id:
         raise HTTPException(status_code=400, detail="Сначала укажите external_id сотрудника")
     device = _get_device(db, body.device_id)
-    client = HikvisionService.client_for(device)
+    client = DeviceService.driver_for(device)
     res = await client.capture_card(emp.external_id)
     if res.success:
         _save_credential(db, emp.id, device.id, "card", res.value_ref)
@@ -468,7 +468,7 @@ async def add_card(
     if not emp.external_id:
         raise HTTPException(status_code=400, detail="Сначала укажите external_id сотрудника")
     device = _get_device(db, body.device_id)
-    client = HikvisionService.client_for(device)
+    client = DeviceService.driver_for(device)
     res = await client.add_card(emp.external_id, body.card_no)
     if res.success:
         _save_credential(db, emp.id, device.id, "card", res.value_ref)

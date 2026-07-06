@@ -4,7 +4,7 @@ import hashlib
 import random
 from datetime import datetime, timedelta, timezone
 
-from app.services.hikvision.base import DeviceConn, DeviceInfo, EnrollResult, RawEvent
+from app.services.devices.base import DeviceConn, DeviceInfo, EnrollResult, RawEvent
 
 
 class MockClient:
