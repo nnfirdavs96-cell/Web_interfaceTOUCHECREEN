@@ -13,7 +13,7 @@ from app.models import Device, User
 from app.schemas.common import Paginated
 from app.schemas.device import DeviceCreate, DeviceOut, DeviceTestResult, DeviceUpdate
 from app.services import audit
-from app.services.hikvision import HikvisionService
+from app.services.devices import DeviceService
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 
@@ -88,7 +88,7 @@ async def test_connection(
     _: User = Depends(require("devices.read")),
 ):
     device = crud.get_or_404(db, Device, device_id)
-    client = HikvisionService.client_for(device)
+    client = DeviceService.driver_for(device)
     info = await client.test_connection()
     device.online = info.online
     if info.online:
@@ -146,7 +146,7 @@ async def sync_time(
 ):
     """Принудительная синхронизация времени устройства с временем сервера."""
     device = crud.get_or_404(db, Device, device_id)
-    client = HikvisionService.client_for(device)
+    client = DeviceService.driver_for(device)
     ok = await client.set_time(device.timezone_offset)
     return {"success": ok, "detail": "Время синхронизировано" if ok else "Не удалось задать время"}
 
@@ -176,7 +176,7 @@ async def device_snapshot(
         raise HTTPException(status_code=401, detail="invalid token") from None
 
     device = crud.get_or_404(db, Device, device_id)
-    client = HikvisionService.client_for(device)
+    client = DeviceService.driver_for(device)
     img = await client.get_snapshot()
     if img is None:
         return Response(status_code=503, content=b"camera unavailable")
@@ -201,7 +201,7 @@ async def sync_all_employees(
     from app.models import Employee
 
     device = crud.get_or_404(db, Device, device_id)
-    client = HikvisionService.client_for(device)
+    client = DeviceService.driver_for(device)
 
     employees = list(
         db.scalars(

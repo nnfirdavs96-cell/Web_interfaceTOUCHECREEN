@@ -26,10 +26,12 @@ backend/app/
 │   ├── devices.py       # CRUD + test-connection + sync-time + snapshot
 │   ├── employees.py     # CRUD + auto-sync + credentials endpoints
 │   └── attendance.py / reports.py / ...
-├── services/hikvision/
-│   ├── isapi.py         # ГЛАВНЫЙ файл — все ISAPI вызовы V4.48
-│   ├── mock.py          # Mock для разработки
-│   └── service.py       # Facade
+├── services/devices/    # Device Abstraction Layer (DAL) — мультивендор
+│   ├── base.py          # Protocol AccessDevice + dataclasses (alias HikvisionClient)
+│   ├── hikvision.py     # ГЛАВНЫЙ файл — IsapiClient, все ISAPI вызовы V4.48
+│   ├── mock.py          # MockClient для разработки
+│   ├── zkteco.py        # ZKTecoDriver — КАРКАС (в разработке, нет железа)
+│   └── service.py       # DeviceService.driver_for(device) — диспетч по vendor
 ├── services/poller.py   # asyncio фоновый poller (30s событий + 1h tz-sync)
 └── main.py              # FastAPI factory + startup + ALTER TABLE миграции
 frontend/src/
@@ -145,8 +147,8 @@ docker compose -f deploy/docker-compose.yml up -d --build [backend|frontend]
 ## Когда нужны новые знания
 
 Используй Grep по симптому ошибки + конкретный файл, например:
-- Ошибка по face → `grep -n "upload_face\|FDSetUp" backend/app/services/hikvision/isapi.py`
-- Ошибка по карте → `grep -n "add_card\|CardInfo" backend/app/services/hikvision/isapi.py`
+- Ошибка по face → `grep -n "upload_face\|FDSetUp" backend/app/services/devices/hikvision.py`
+- Ошибка по карте → `grep -n "add_card\|CardInfo" backend/app/services/devices/hikvision.py`
 - Endpoint не работает → `grep -rn "endpoint_name" backend/app/api/`
 
 ## Текущая версия (на момент записи)

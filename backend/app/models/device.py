@@ -14,6 +14,9 @@ class Device(UUIDPKMixin, TimestampMixin, Base):
         ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    vendor: Mapped[str] = mapped_column(
+        String(32), default="hikvision", nullable=False, index=True
+    )
     type: Mapped[str] = mapped_column(String(32), default="multi", nullable=False)
     ip: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     port: Mapped[int] = mapped_column(Integer, default=80, nullable=False)

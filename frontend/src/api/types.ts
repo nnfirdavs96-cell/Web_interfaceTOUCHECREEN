@@ -60,6 +60,7 @@ export interface Device {
   id: string;
   branch_id: string | null;
   name: string;
+  vendor: string;
   type: string;
   ip: string;
   port: number;

@@ -1,6 +1,11 @@
-"""Абстракция над Hikvision-устройством.
+"""Device Abstraction Layer (DAL) — единый интерфейс СКУД-устройства.
 
-Реализации: MockClient (для разработки) и IsapiClient (реальный ISAPI).
+Не зависит от вендора. Реализации-драйверы:
+- MockClient       — для разработки без железа
+- IsapiClient      — Hikvision ISAPI (V4.48)
+- ZKTecoDriver     — ZKTeco (ZKBio / PUSH SDK)  [в разработке]
+
+Драйвер выбирается по полю Device.vendor через DeviceService.driver_for().
 """
 from dataclasses import dataclass
 from datetime import datetime
@@ -36,10 +41,12 @@ class RawEvent:
 class EnrollResult:
     success: bool
     detail: str
-    value_ref: str | None = None  # ID шаблона или maskированный номер
+    value_ref: str | None = None  # ID шаблона или маскированный номер
 
 
-class HikvisionClient(Protocol):
+class AccessDevice(Protocol):
+    """Единый протокол для любого СКУД-терминала независимо от вендора."""
+
     async def test_connection(self) -> DeviceInfo: ...
     async def fetch_events(self, since: datetime, until: datetime) -> list[RawEvent]: ...
     async def upsert_user(self, external_id: str, full_name: str) -> EnrollResult: ...
@@ -56,3 +63,7 @@ class HikvisionClient(Protocol):
     async def capture_card(self, external_id: str) -> EnrollResult: ...
     async def set_time(self, offset_hours: int = 5) -> bool: ...
     async def ensure_24x7_schedule(self) -> bool: ...
+
+
+# Обратная совместимость со старым названием протокола.
+HikvisionClient = AccessDevice

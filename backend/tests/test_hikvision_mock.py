@@ -1,8 +1,8 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
 
-from app.services.hikvision.base import DeviceConn
-from app.services.hikvision.mock import MockClient
+from app.services.devices.base import DeviceConn
+from app.services.devices.mock import MockClient
 
 
 def _run(coro):

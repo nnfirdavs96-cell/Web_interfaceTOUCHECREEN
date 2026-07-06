@@ -12,7 +12,7 @@ from sqlalchemy import select
 
 from app.db.session import SessionLocal
 from app.models import AttendanceEvent, Device, Employee
-from app.services.hikvision import HikvisionService
+from app.services.devices import DeviceService
 from app.services.ws import manager
 
 log = logging.getLogger("poller")
@@ -38,7 +38,7 @@ async def poll_once() -> int:
 
         for device in devices:
             try:
-                client = HikvisionService.client_for(device)
+                client = DeviceService.driver_for(device)
                 events = await client.fetch_events(since, until)
             except Exception as e:
                 log.warning("poll device %s failed: %s", device.id, e)
@@ -87,7 +87,7 @@ async def sync_time_once() -> int:
         devices = list(db.scalars(select(Device).where(Device.online.is_(True))).all())
     for device in devices:
         try:
-            client = HikvisionService.client_for(device)
+            client = DeviceService.driver_for(device)
             tz_offset = getattr(device, "timezone_offset", 5)
             if await client.set_time(tz_offset):
                 done += 1
