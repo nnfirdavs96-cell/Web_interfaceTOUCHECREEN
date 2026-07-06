@@ -1,8 +1,10 @@
 # ANT Access · Midnight Observatory
 
-Современная веб-платформа для управления устройствами контроля доступа Hikvision (тестировано на DS-K1T343MFWX V4.48), учёта рабочего времени сотрудников и формирования отчётов. Альтернатива HikCentral / iVMS-4200 с упором на простоту, красивый UI и работу прямо из браузера.
+Единая веб-платформа управления СКУД и видеонаблюдением от разных производителей (Hikvision, ZKTeco, Dahua, Suprema) + ONVIF-камеры, учёта рабочего времени и отчётности. Альтернатива HikCentral / iVMS-4200 с упором на простоту, красивый UI и работу прямо из браузера.
 
-> **Статус:** в production-готовом виде работают все 7 этапов. Эмпирически проверено на реальном устройстве DS-K1T343MFWX (прошивка V4.48.0) — синхронизация сотрудников, регистрация карт, отпечатков, лиц, расчёт табеля, экспорт отчётов.
+> **Статус:** все 7 базовых этапов в production-готовом виде, эмпирически проверены на реальном Hikvision DS-K1T343MFWX (V4.48.0) — синхронизация сотрудников, карты, отпечатки, лица, табель, экспорт.
+>
+> Сверх базы построен **мультивендорный слой** (ТЗ UniAccess): Device Abstraction Layer (Hikvision работает; ZKTeco/Dahua/Suprema — рабочие каркасы, ждут железа), Camera Abstraction Layer (ONVIF/RTSP + MediaMTX-транскодер), мультитенантность (флаг), Edge Gateway для устройств за NAT. Драйверы без железа и туннель Gateway проверены логически (mock + in-process RPC), e2e на оборудовании — по мере доступа.
 
 ---
 
@@ -14,13 +16,14 @@
 4. [Структура репозитория](#структура-репозитория)
 5. [Быстрый запуск](#быстрый-запуск)
 6. [Прогресс по этапам](#прогресс-по-этапам)
-7. [Что протестировано на реальном устройстве](#что-протестировано-на-реальном-устройстве)
-8. [Ограничения прошивки V4.48](#ограничения-прошивки-v448)
-9. [Workflow администратора](#workflow-администратора)
-10. [Workflow регистрации сотрудника](#workflow-регистрации-сотрудника)
-11. [API / RBAC / Hikvision-обвязка](#api--rbac--hikvision-обвязка)
-12. [Что осталось](#что-осталось)
-13. [Полезные команды](#полезные-команды)
+7. [Мультивендорная платформа (UniAccess)](#мультивендорная-платформа-uniaccess)
+8. [Что протестировано на реальном устройстве](#что-протестировано-на-реальном-устройстве)
+9. [Ограничения прошивки V4.48](#ограничения-прошивки-v448)
+10. [Workflow администратора](#workflow-администратора)
+11. [Workflow регистрации сотрудника](#workflow-регистрации-сотрудника)
+12. [API / RBAC / Hikvision-обвязка](#api--rbac--hikvision-обвязка)
+13. [Что осталось](#что-осталось)
+14. [Полезные команды](#полезные-команды)
 
 ---
 
@@ -41,21 +44,25 @@
 - ✅ Отчёты: дневной, недельный, месячный, по сотруднику/отделу/филиалу, сводный табель.
 - ✅ Экспорт **Excel / CSV / PDF**.
 - ✅ WebSocket — события прохода в реальном времени.
-- ✅ RBAC: 7 ролей × 24 разрешения.
+- ✅ RBAC: 7 ролей × 28 разрешений.
 - ✅ Аудит-лог всех write-операций (JSONB before/after).
 - ✅ Тёмная/светлая тема, локализация RU/EN/UZ.
 - ✅ **Дизайн-система Atlantic.vc** — «полночная обсерватория»: ambient-свечение, glow-карточки, градиентные метрики, премиум микро-взаимодействия (см. раздел [Дизайн-система](#дизайн-система-atlanticvc)).
+- ✅ **Мультивендорность СКУД** — единый Device Abstraction Layer: Hikvision (боевой), ZKTeco / Dahua / Suprema (рабочие каркасы). Выбор вендора в форме устройства.
+- ✅ **Видеонаблюдение** — ONVIF/RTSP-камеры, страница «Камеры» с live-превью; MediaMTX-транскодер RTSP→WebRTC/HLS (плеер hls.js) с fallback на snapshot-polling.
+- ✅ **Мультитенантность** (флаг `MULTITENANCY_ENABLED`) — изоляция данных по организации: не-админ видит только свою, super_admin/admin — все.
+- ✅ **Edge Gateway** — локальный агент в сети клиента: доступ к устройствам за NAT через защищённый WS-туннель, без проброса портов.
 - ⏳ Интеграции с 1С / биллингом (этап 6 — отложен по запросу заказчика).
 
 ---
 
 ## Технологический стек
 
-**Backend:** Python 3.12, FastAPI, PostgreSQL 16, Redis 7, SQLAlchemy 2.0 + Alembic, asyncio (фоновые задачи), httpx + subprocess curl (для специфики Hikvision), JWT, bcrypt, openpyxl, reportlab, cryptography (Fernet).
+**Backend:** Python 3.12, FastAPI, PostgreSQL 16, Redis 7, SQLAlchemy 2.0 + Alembic, asyncio (фоновые задачи), httpx + subprocess curl (для специфики Hikvision), JWT, bcrypt, openpyxl, reportlab, cryptography (Fernet). Вендор-интеграции: `onvif-zeep` (камеры), `pyzk` (ZKTeco), `websockets` (Edge Gateway).
 
-**Frontend:** React 18 + TypeScript + Vite, Tailwind CSS, TanStack Query, Zustand, react-i18next, lucide-react. Дизайн-система **Atlantic.vc** + скилл [UI/UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) (подключён через `.claude/settings.json`).
+**Frontend:** React 18 + TypeScript + Vite, Tailwind CSS, TanStack Query, Zustand, react-i18next, lucide-react, `hls.js` (live-видео). Дизайн-система **Atlantic.vc** + скилл [UI/UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) (подключён через `.claude/settings.json`).
 
-**Infra:** Docker Compose, Nginx (reverse-proxy + WebSocket).
+**Infra:** Docker Compose, Nginx (reverse-proxy + WebSocket), **MediaMTX** (транскодер RTSP→WebRTC/HLS).
 
 ---
 
@@ -114,30 +121,48 @@ Web_interfaceTOUCHECREEN/
 │   │   ├── core/
 │   │   │   ├── config.py           # Pydantic Settings (.env)
 │   │   │   ├── security.py         # JWT, bcrypt, password hashing
-│   │   │   ├── rbac.py             # 7 ролей × 24 разрешения
+│   │   │   ├── rbac.py             # 7 ролей × 28 разрешений
 │   │   │   └── crypto.py           # Fernet шифрование паролей устройств
 │   │   ├── db/
 │   │   │   ├── base.py / session.py
 │   │   │   ├── seed.py             # admin@hikvision.dev / admin + роли
 │   │   │   └── demo_seed.py        # Опционально: 10 сотрудников + 7 дней событий
-│   │   ├── models/                 # 17 SQLAlchemy таблиц
+│   │   ├── models/                 # SQLAlchemy таблицы (+ cameras, gateways)
 │   │   ├── schemas/                # Pydantic DTO
+│   │   ├── api/tenant.py           # Мультитенантность (contextvar + loader_criteria)
 │   │   ├── services/
-│   │   │   ├── hikvision/
-│   │   │   │   ├── base.py         # Protocol HikvisionClient
-│   │   │   │   ├── isapi.py        # Реальный клиент (XML/JSON, Digest, curl-fallback)
-│   │   │   │   ├── mock.py         # Mock для разработки без железа
-│   │   │   │   └── service.py      # Facade: подбирает клиент по HIKVISION_MODE
+│   │   │   ├── devices/            # Device Abstraction Layer (мультивендор СКУД)
+│   │   │   │   ├── base.py         # Protocol AccessDevice + dataclasses
+│   │   │   │   ├── hikvision.py    # IsapiClient (XML/JSON, Digest, curl-fallback) — боевой
+│   │   │   │   ├── zkteco.py       # ZKTecoDriver (pyzk, порт 4370) — ждёт железа
+│   │   │   │   ├── dahua.py        # DahuaDriver (HTTP CGI) — ждёт железа
+│   │   │   │   ├── suprema.py      # SupremaDriver (BioStar 2) — каркас
+│   │   │   │   ├── mock.py         # MockClient для разработки без железа
+│   │   │   │   └── service.py      # DeviceService.driver_for — диспетч по vendor/gateway
+│   │   │   ├── cameras/            # Camera Abstraction Layer (ONVIF/RTSP)
+│   │   │   │   ├── base.py         # Protocol VideoSource + PTZCommand
+│   │   │   │   ├── onvif.py        # OnvifCamera (discovery + snapshot)
+│   │   │   │   ├── mediamtx.py     # Регистрация RTSP-пути → HLS/WebRTC URL
+│   │   │   │   ├── mock.py         # MockCamera (синтетический PNG-кадр)
+│   │   │   │   └── service.py      # CameraService.driver_for
+│   │   │   ├── gateway/            # Edge Gateway (доступ за NAT)
+│   │   │   │   ├── protocol.py     # сериализация RPC (bytes/datetime/dataclass)
+│   │   │   │   ├── registry.py     # реестр агентов + RPC (correlation id)
+│   │   │   │   ├── remote.py       # RemoteDriver(AccessDevice) — через туннель
+│   │   │   │   └── executor.py     # агент-сторона: локальный драйвер
 │   │   │   ├── attendance.py       # Алгоритм расчёта табеля (ночные смены, обед)
 │   │   │   ├── poller.py           # asyncio: опрос событий + sync_time каждый час
 │   │   │   ├── ws.py               # ConnectionManager для live-events
 │   │   │   ├── audit.py            # Запись в audit_logs с JSONB before/after
 │   │   │   ├── report.py / export.py  # Сборка табеля + CSV/Excel/PDF
-│   │   ├── tests/                  # pytest: RBAC, security, hikvision mock
+│   │   ├── tests/                  # pytest: RBAC, security, драйверы, tenant, gateway RPC
 │   │   └── main.py                 # FastAPI factory + startup (ALTER TABLE, seed, pollers)
 │   ├── pyproject.toml
 │   ├── Dockerfile                  # Python 3.12-slim + curl (для face upload)
 │   └── .env.example
+│
+├── edge/
+│   └── agent.py                    # Автономный Edge Gateway агент (ставится в LAN клиента)
 │
 ├── frontend/
 │   ├── src/
@@ -151,7 +176,9 @@ Web_interfaceTOUCHECREEN/
 │   │   │   ├── Login.tsx
 │   │   │   ├── Dashboard.tsx       # KPI + bar chart + recent events
 │   │   │   ├── organizations/ / departments/ / branches/
-│   │   │   ├── devices/            # Карточная сетка + test/sync/time, tz dropdown
+│   │   │   ├── devices/            # Карточная сетка + test/sync/time, vendor, gateway
+│   │   │   ├── cameras/            # Live-превью (HLS/snapshot), привязка к точке
+│   │   │   ├── gateways/           # Edge Gateway: токен, статус, команда запуска
 │   │   │   ├── employees/
 │   │   │   │   ├── EmployeesPage.tsx     # Таблица с фильтрами + drawer
 │   │   │   │   └── EmployeeDetailPage.tsx  # 5 вкладок: Профиль, Устройства,
@@ -168,7 +195,8 @@ Web_interfaceTOUCHECREEN/
 │   └── nginx.conf                  # /api/ proxy + WebSocket upgrade
 │
 ├── deploy/
-│   └── docker-compose.yml          # postgres + redis + backend + frontend (порт 8090)
+│   ├── docker-compose.yml          # postgres + redis + backend + frontend + mediamtx (8090)
+│   └── mediamtx.yml                # конфиг транскодера (HLS low-latency + WebRTC)
 │
 ├── docs/
 │   ├── ARCHITECTURE.md
@@ -212,7 +240,7 @@ docker compose -f deploy/docker-compose.yml up -d --build
 - Структура проекта (`app/{core,db,models,schemas,api/v1}`)
 - Настройки через `pydantic-settings`
 - JWT (access 15 мин + refresh 7 дней), bcrypt
-- **RBAC: 7 ролей × 24 разрешения** (super_admin, admin, hr, accountant, manager, viewer, branch_admin)
+- **RBAC: 7 ролей × 28 разрешений** (super_admin, admin, hr, accountant, manager, viewer, branch_admin)
 - Модели `roles`, `users`; auto-seed `admin@hikvision.dev`
 - Endpoints: `/auth/login`, `/auth/refresh`, `/auth/me`, `/auth/logout`, `/api/health`
 - Frontend: Login страница, ProtectedRoute, Layout (Sidebar 13 разделов + Topbar)
@@ -371,6 +399,51 @@ docker compose -f deploy/docker-compose.yml up -d --build
 
 ---
 
+## Мультивендорная платформа (UniAccess)
+
+Сверх базовой Hikvision-платформы построен слой абстракции для поддержки **нескольких вендоров СКУД и видеонаблюдения** в едином интерфейсе (по ТЗ UniAccess).
+
+### Device Abstraction Layer (DAL)
+
+Единый протокол `AccessDevice` (`services/devices/base.py`), драйвер выбирается по `Device.vendor`:
+
+| Вендор | Драйвер | Транспорт | Статус |
+|---|---|---|---|
+| **Hikvision** | `IsapiClient` | ISAPI (HTTP, Digest) | ✅ Боевой, проверен на железе |
+| **ZKTeco** | `ZKTecoDriver` | pyzk (порт 4370) | 🟡 Рабочий каркас, ждёт железа |
+| **Dahua** | `DahuaDriver` | HTTP CGI (magicBox/snapshot/time) | 🟡 Рабочий каркас, ждёт железа |
+| **Suprema** | `SupremaDriver` | BioStar 2 REST | 🟡 Каркас (нужен сервер BioStar) |
+
+Драйверы без железа деградируют мягко (понятное сообщение вместо падения) — как это было с Hikvision V4.48 на старте.
+
+### Camera Abstraction Layer (CAL) + видео
+
+- `VideoSource` протокол (`services/cameras/`): `OnvifCamera` (ONVIF discovery + snapshot) и `MockCamera` (синтетический кадр для dev).
+- Страница **«Камеры»**: live-превью, привязка камеры к точке доступа (видео при событии прохода).
+- **MediaMTX** транскодер RTSP→WebRTC/HLS: при `MEDIAMTX_ENABLED=true` бэкенд регистрирует RTSP-путь камеры, плеер (`hls.js`) играет low-latency HLS; при выключенном — fallback на snapshot-polling (2.5 с).
+
+### Мультитенантность
+
+Флаг `MULTITENANCY_ENABLED` (по умолчанию OFF — поведение single-tenant, без риска для текущего деплоя). Тенант = **организация**. Механизм: `contextvar` + событие `do_orm_execute` с `with_loader_criteria` автоматически фильтруют все SELECT'ы scoped-моделей. Не-админ видит только свою организацию; super_admin/admin — все. ⚠️ Перед включением — backfill `organization_id` у существующих строк.
+
+### Edge Gateway (доступ за NAT)
+
+Устройства обычно в локальной сети клиента, платформа — в облаке. **Агент** (`edge/agent.py`) ставится в LAN клиента и держит исходящий WebSocket-туннель к облаку (проброс портов не нужен). Если у устройства задан `gateway_id`, `DeviceService.driver_for` возвращает `RemoteDriver`, который маршрутизирует вызовы через туннель; агент выполняет их локальными драйверами и возвращает результат.
+
+```bash
+# На машине в сети клиента (после создания шлюза в UI → получить токен):
+export CLOUD_WS_URL="wss://<сервер>/api/v1/gateways/ws"
+export GATEWAY_TOKEN="<токен-из-UI>"
+python -m edge.agent            # реальные драйверы
+python -m edge.agent --mock     # проверка туннеля без железа
+```
+
+RPC-протокол (сериализация bytes/datetime/dataclass) проверен end-to-end **в процессе** (RemoteDriver → registry → агент → executor → MockClient). e2e с реальным агентом и железом ещё не гонялся. Multi-worker потребует Redis pub/sub (реестр агентов сейчас in-memory на процесс).
+
+> **Общий принцип верификации:** Hikvision и мультитенантность проверены на реальных данных (железо / SQLite-запросы). ZKTeco/Dahua/Suprema/ONVIF/MediaMTX/Edge Gateway — корректный код + mock/in-process тесты; e2e на оборудовании выполняется по мере доступа к нему.
+
+---
+
 ## Что протестировано на реальном устройстве
 
 **Устройство:** Hikvision DS-K1T343MFWX, прошивка V4.48.0, IP 192.168.0.31
@@ -494,7 +567,7 @@ docker compose -f deploy/docker-compose.yml up -d --build
 | `viewer` | Только просмотр |
 | `branch_admin` | Управление своим филиалом (устройства, сотрудники) |
 
-24 разрешения по схеме `<resource>.<action>` — см. `backend/app/core/rbac.py`.
+28 разрешений по схеме `<resource>.<action>` — см. `backend/app/core/rbac.py`.
 
 ### Hikvision клиент
 
@@ -521,14 +594,14 @@ HIKVISION_MODE=isapi
 | # | Задача | Приоритет |
 |---|---|:---:|
 | 1 | **Этап 6** — интеграции с 1С / биллингом | M |
-| 2 | Production HTTPS через Let's Encrypt + Nginx | H |
-| 3 | Alembic миграции вместо `CREATE_ALL + ALTER IF NOT EXISTS` | M |
-| 4 | Поддержка нескольких устройств **разных моделей** (не только DS-K1T343) | L |
-| 5 | Bulk-импорт сотрудников из Excel | M |
-| 6 | Auto-cleanup attendance_events старше 1 года | L |
-| 7 | Уведомления Telegram/Email при опозданиях | L |
-| 8 | Мобильное приложение для сотрудников (PWA?) | L |
-| 9 | Двухфакторная аутентификация | L |
+| 2 | **Валидация на железе** драйверов ZKTeco / Dahua / Suprema и e2e Edge Gateway | H |
+| 3 | Production HTTPS через Let's Encrypt + Nginx | H |
+| 4 | Redis pub/sub для реестра Edge Gateway (multi-worker) | M |
+| 5 | Alembic миграции вместо `CREATE_ALL + ALTER IF NOT EXISTS` | M |
+| 6 | Backfill `organization_id` перед включением мультитенантности на проде | M |
+| 7 | Bulk-импорт сотрудников из Excel | M |
+| 8 | Уведомления Telegram/Email при опозданиях | L |
+| 9 | Мобильное приложение для сотрудников (PWA?) / 2FA | L |
 
 ---
 
