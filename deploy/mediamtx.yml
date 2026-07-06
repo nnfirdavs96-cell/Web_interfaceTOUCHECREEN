@@ -1,0 +1,39 @@
+# MediaMTX — транскодер RTSP→WebRTC/HLS для live-видео камер.
+# Пути камер создаются динамически бэкендом через control API (порт 9997).
+
+logLevel: info
+
+# --- Control API (бэкенд регистрирует пути камер) ---
+api: yes
+apiAddress: :9997
+
+# --- Метрики (опционально) ---
+metrics: no
+
+# --- RTSP-сервер (приём/ретрансляция) ---
+rtsp: yes
+rtspAddress: :8554
+protocols: [tcp]
+
+# --- HLS (низколатентный, основной путь воспроизведения в браузере) ---
+hls: yes
+hlsAddress: :8888
+hlsVariant: lowLatency
+hlsAlwaysRemux: no
+# Разрешаем доступ из браузера (nginx проксирует same-origin).
+hlsAllowOrigin: '*'
+
+# --- WebRTC (низкая задержка; ICE через UDP 8189) ---
+webrtc: yes
+webrtcAddress: :8889
+webrtcAllowOrigin: '*'
+webrtcLocalUDPAddress: :8189
+# Для LAN-развёртывания дополнительные хосты не нужны; при необходимости
+# добавьте IP сервера: webrtcAdditionalHosts: [192.168.0.162]
+
+# --- RTMP/прочее выключено ---
+rtmp: no
+srt: no
+
+# Пути создаются рантайм-API; статических нет.
+paths: {}

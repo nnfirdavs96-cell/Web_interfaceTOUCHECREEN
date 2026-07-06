@@ -20,6 +20,14 @@ class Settings(BaseSettings):
 
     HIKVISION_MODE: str = "mock"
 
+    # MediaMTX — транскодер RTSP→WebRTC/HLS для live-видео камер.
+    # MEDIAMTX_ENABLED=false → /stream отдаёт только rtsp_url (без live в браузере).
+    MEDIAMTX_ENABLED: bool = False
+    MEDIAMTX_API_URL: str = "http://mediamtx:9997"
+    # Публичные пути (через nginx) для плеера в браузере.
+    MEDIAMTX_HLS_PATH: str = "/hls"
+    MEDIAMTX_WEBRTC_PATH: str = "/webrtc"
+
     SEED_ADMIN_EMAIL: str = "admin@hikvision.dev"
     SEED_ADMIN_PASSWORD: str = "admin"
     DEMO_SEED: bool = False

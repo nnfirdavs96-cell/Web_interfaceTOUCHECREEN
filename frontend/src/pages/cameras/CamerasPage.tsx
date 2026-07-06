@@ -10,6 +10,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import Hls from "hls.js";
 import { branchesApi } from "@/api/branches";
 import { camerasApi } from "@/api/cameras";
 import { devicesApi } from "@/api/devices";
@@ -42,8 +43,8 @@ interface Form {
   comment?: string;
 }
 
-/** Live-превью камеры: перезапрашивает snapshot каждые 2.5 c. */
-function LiveSnapshot({ cameraId }: { cameraId: string }) {
+/** Snapshot-poll превью (fallback когда MediaMTX выключен). */
+function SnapshotPreview({ cameraId }: { cameraId: string }) {
   const token = useAuthStore((s) => s.accessToken);
   const [src, setSrc] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -76,22 +77,71 @@ function LiveSnapshot({ cameraId }: { cameraId: string }) {
     };
   }, [cameraId, token]);
 
+  if (src && !failed) {
+    return <img src={src} alt="live" className="h-full w-full object-cover" />;
+  }
+  return (
+    <div className="flex flex-col items-center gap-2 text-fog-text">
+      <VideoOff className="h-6 w-6" strokeWidth={1.5} />
+      <span className="font-mono text-[10px] uppercase tracking-[0.16em]">
+        {failed ? "нет сигнала" : "подключение…"}
+      </span>
+    </div>
+  );
+}
+
+/** HLS-плеер (через MediaMTX). */
+function HlsPlayer({ url }: { url: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    // Safari умеет HLS нативно
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = url;
+      return;
+    }
+    if (Hls.isSupported()) {
+      const hls = new Hls({ lowLatencyMode: true, liveSyncDurationCount: 2 });
+      hls.loadSource(url);
+      hls.attachMedia(video);
+      return () => hls.destroy();
+    }
+  }, [url]);
+
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      muted
+      playsInline
+      className="h-full w-full object-cover"
+    />
+  );
+}
+
+/** Live-превью: HLS через MediaMTX, иначе snapshot-polling. */
+function CameraLive({ cameraId }: { cameraId: string }) {
+  const { data } = useQuery({
+    queryKey: ["camera-stream", cameraId],
+    queryFn: () => camerasApi.stream(cameraId),
+    staleTime: 60_000,
+    retry: false,
+  });
+  const hlsUrl = data?.live ? data.hls_url : null;
+
   return (
     <div className="relative mb-4 flex aspect-video w-full items-center justify-center overflow-hidden rounded-inputs border border-ice-white/14 bg-carbon/60">
-      {src && !failed ? (
-        <img src={src} alt="live" className="h-full w-full object-cover" />
+      {hlsUrl ? (
+        <HlsPlayer url={hlsUrl} />
       ) : (
-        <div className="flex flex-col items-center gap-2 text-fog-text">
-          <VideoOff className="h-6 w-6" strokeWidth={1.5} />
-          <span className="font-mono text-[10px] uppercase tracking-[0.16em]">
-            {failed ? "нет сигнала" : "подключение…"}
-          </span>
-        </div>
+        <SnapshotPreview cameraId={cameraId} />
       )}
       <div className="absolute right-2 top-2 flex items-center gap-1.5 rounded-full border border-signal-orange/40 bg-void-black/70 px-2 py-0.5">
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-signal-orange" />
         <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-signal-orange">
-          live
+          {hlsUrl ? "live" : "snapshot"}
         </span>
       </div>
     </div>
@@ -239,7 +289,7 @@ export default function CamerasPage() {
               )}
             </div>
 
-            <LiveSnapshot cameraId={c.id} />
+            <CameraLive cameraId={c.id} />
 
             <dl className="mb-4 space-y-1.5 font-mono text-[10px] uppercase tracking-[0.12em]">
               <div className="flex items-baseline justify-between gap-3">

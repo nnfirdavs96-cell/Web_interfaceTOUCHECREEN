@@ -111,6 +111,9 @@ export interface CameraTestResult {
 
 export interface CameraStreamInfo {
   stream_url: string | null;
+  hls_url: string | null;
+  webrtc_url: string | null;
+  live: boolean;
   detail: string;
 }
 
