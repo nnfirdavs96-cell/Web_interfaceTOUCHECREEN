@@ -46,6 +46,7 @@ export interface SystemUser {
   email: string;
   full_name: string;
   role: string;
+  organization_id: string | null;
   is_active: boolean;
   last_login_at: string | null;
   created_at: string;

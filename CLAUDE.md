@@ -116,9 +116,18 @@ weekPlan 24/7 + привязывает шаблон 1.
 - ✅ **Инфра** MediaMTX-транскодер RTSP→WebRTC/HLS — compose+config+nginx, HLS-плеер (hls.js) с fallback на snapshot
 - ✅ **C** ZKTeco драйвер (pyzk, порт 4370) — рабочий каркас, ждёт валидации на железе
 - ✅ **E** tenant-ready миграция — organization_id (TenantMixin) в Device/Camera/User/Schedule, БЕЗ enforcement
-- ⏳ **F** включение мультитенантности (tenants-фильтрация middleware) — по решению
+- ✅ **F** мультитенантность (тенант=Organization) — авто-фильтрация всех SELECT через
+  contextvar + with_loader_criteria (`app/api/tenant.py`), флаг `MULTITENANCY_ENABLED` (OFF по умолч.)
 - ⏳ **G** Edge Gateway (агент за NAT) — решение отложено
 - ⏳ **H** доп. вендоры (Dahua, Suprema) — по мере железа
+
+Мультитенантность: `MULTITENANCY_ENABLED=true` включает изоляцию. Тенант = Organization.
+Не-админ видит только свою org (users.organization_id); super_admin/admin — все.
+Механизм: `get_current_user` ставит contextvar `current_tenant`, событие `do_orm_execute`
+вешает `with_loader_criteria` на все scoped-модели (Branch/Department/Employee/Device/
+Camera/Schedule/User + Organization). `get_or_404` доп. проверяет (cross-tenant=404),
+`crud.create` авто-проставляет org. ⚠️ Перед включением — backfill organization_id
+(строки с NULL-org станут невидимы). Проверено на SQLite (6 тестов).
 
 Видео: MediaMTX включается `MEDIAMTX_ENABLED=true` (нужны реальные камеры).
 Выключен → страница «Камеры» показывает snapshot-polling (2.5с). Включён →

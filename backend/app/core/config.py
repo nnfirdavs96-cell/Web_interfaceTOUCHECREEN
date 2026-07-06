@@ -20,6 +20,13 @@ class Settings(BaseSettings):
 
     HIKVISION_MODE: str = "mock"
 
+    # Мультитенантность: изоляция данных по организации (тенанту).
+    # false → single-tenant (как сейчас), фильтрация выключена — БЕЗ риска
+    # для существующего деплоя. true → каждый пользователь видит только
+    # свою организацию (super_admin/admin — все). Требует backfill
+    # organization_id у существующих строк перед включением.
+    MULTITENANCY_ENABLED: bool = False
+
     # MediaMTX — транскодер RTSP→WebRTC/HLS для live-видео камер.
     # MEDIAMTX_ENABLED=false → /stream отдаёт только rtsp_url (без live в браузере).
     MEDIAMTX_ENABLED: bool = False

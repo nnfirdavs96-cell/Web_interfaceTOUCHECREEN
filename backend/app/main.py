@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import app.api.tenant  # noqa: F401 — регистрирует event-листенер тенант-изоляции
 from app.api.v1 import api_router
 from app.core.config import settings
 from app.db.base import Base

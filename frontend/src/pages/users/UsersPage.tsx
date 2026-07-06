@@ -3,6 +3,7 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import type { SystemUser } from "@/api/types";
 import { usersApi } from "@/api/users";
+import { orgsApi } from "@/api/organizations";
 import { Button } from "@/components/ui/Button";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Drawer } from "@/components/ui/Drawer";
@@ -14,6 +15,7 @@ interface Form {
   password?: string;
   full_name?: string;
   role?: string;
+  organization_id?: string | null;
   is_active?: boolean;
 }
 
@@ -25,6 +27,10 @@ export default function UsersPage() {
   const [form, setForm] = useState<Form>({});
 
   const roles = useQuery({ queryKey: ["roles"], queryFn: () => usersApi.roles() });
+  const organizations = useQuery({
+    queryKey: ["organizations", "all"],
+    queryFn: () => orgsApi.list({ page_size: 200 }),
+  });
   const { data, isLoading } = useQuery({
     queryKey: ["users", search],
     queryFn: () => usersApi.list({ search: search || undefined, page_size: 100 }),
@@ -36,6 +42,7 @@ export default function UsersPage() {
         ? usersApi.update(editing.id, {
             full_name: payload.full_name,
             role: payload.role,
+            organization_id: payload.organization_id ?? null,
             is_active: payload.is_active,
             password: payload.password || undefined,
           })
@@ -44,6 +51,7 @@ export default function UsersPage() {
             password: payload.password!,
             full_name: payload.full_name!,
             role: payload.role!,
+            organization_id: payload.organization_id ?? null,
             is_active: payload.is_active ?? true,
           }),
     onSuccess: () => {
@@ -64,7 +72,13 @@ export default function UsersPage() {
   }
   function openEdit(u: SystemUser) {
     setEditing(u);
-    setForm({ full_name: u.full_name, role: u.role, is_active: u.is_active, email: u.email });
+    setForm({
+      full_name: u.full_name,
+      role: u.role,
+      organization_id: u.organization_id,
+      is_active: u.is_active,
+      email: u.email,
+    });
     setOpen(true);
   }
   function close() {
@@ -205,6 +219,18 @@ export default function UsersPage() {
               <option value="" disabled>Выберите…</option>
               {roles.data?.map((r) => (
                 <option key={r.code} value={r.code}>{r.name}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Организация (тенант)">
+            <select
+              value={form.organization_id ?? ""}
+              onChange={(e) => setForm({ ...form, organization_id: e.target.value || null })}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+            >
+              <option value="">— все (super_admin/admin) —</option>
+              {organizations.data?.items.map((o) => (
+                <option key={o.id} value={o.id}>{o.name}</option>
               ))}
             </select>
           </Field>
