@@ -25,6 +25,7 @@ dependencies = [
     "reportlab>=4.2",
     "slowapi>=0.1.9",
     "onvif-zeep>=0.2.12",
+    "pyzk>=0.9",
 ]
 
 [project.optional-dependencies]
