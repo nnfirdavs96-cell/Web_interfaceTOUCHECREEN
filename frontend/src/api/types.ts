@@ -83,6 +83,35 @@ export interface DeviceTestResult {
   firmware: string | null;
 }
 
+export interface Camera {
+  id: string;
+  branch_id: string | null;
+  linked_device_id: string | null;
+  name: string;
+  vendor: string;
+  ip: string;
+  port: number;
+  username: string;
+  rtsp_url: string | null;
+  model: string | null;
+  online: boolean;
+  last_seen_at: string | null;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CameraTestResult {
+  online: boolean;
+  detail: string;
+  model: string | null;
+}
+
+export interface CameraStreamInfo {
+  stream_url: string | null;
+  detail: string;
+}
+
 export interface Employee {
   id: string;
   external_id: string | null;
