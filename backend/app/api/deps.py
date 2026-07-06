@@ -32,6 +32,11 @@ def get_current_user(
     user = db.get(User, user_id)
     if user is None or not user.is_active:
         raise creds_exc
+
+    # Выставляем тенант-контекст запроса (no-op если мультитенантность выключена).
+    from app.api.tenant import set_current_tenant
+
+    set_current_tenant(user)
     return user
 
 

@@ -35,6 +35,11 @@ def get_or_404(db: Session, model: type, obj_id: UUID):
     obj = db.get(model, obj_id)
     if obj is None:
         raise HTTPException(status_code=404, detail=f"{model.__name__} not found")
+    # Тенант-изоляция: cross-tenant доступ выглядит как 404.
+    from app.api.tenant import check_object_scope
+
+    if not check_object_scope(obj):
+        raise HTTPException(status_code=404, detail=f"{model.__name__} not found")
     return obj
 
 
@@ -47,6 +52,10 @@ def create(
     request: Request,
     entity_type: str,
 ):
+    # Тенант-изоляция: авто-проставляем organization_id при создании.
+    from app.api.tenant import assign_tenant
+
+    data = assign_tenant(data, model)
     obj = model(**data)
     db.add(obj)
     db.flush()

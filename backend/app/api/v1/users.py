@@ -22,6 +22,7 @@ def _to_out(u: User) -> UserListOut:
         email=u.email,
         full_name=u.full_name,
         role=u.role.code,
+        organization_id=u.organization_id,
         is_active=u.is_active,
         last_login_at=u.last_login_at,
         created_at=u.created_at,
@@ -67,11 +68,17 @@ def create_user(
     if db.scalar(select(User).where(User.email == body.email)):
         raise HTTPException(status_code=409, detail="Email already exists")
     role = _resolve_role(db, body.role)
+    # Тенант: явно заданная организация или (при мультитенантности) организация
+    # создающего администратора.
+    from app.api.tenant import current_tenant
+
+    org_id = body.organization_id or current_tenant.get()
     user = User(
         email=body.email,
         password_hash=hash_password(body.password),
         full_name=body.full_name,
         role_id=role.id,
+        organization_id=org_id,
         is_active=body.is_active,
     )
     db.add(user)
@@ -106,6 +113,8 @@ def update_user(
         user.full_name = body.full_name
     if body.role is not None:
         user.role_id = _resolve_role(db, body.role).id
+    if body.organization_id is not None:
+        user.organization_id = body.organization_id
     if body.is_active is not None:
         user.is_active = body.is_active
     if body.password:

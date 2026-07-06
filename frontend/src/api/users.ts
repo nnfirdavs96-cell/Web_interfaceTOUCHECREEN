@@ -9,6 +9,7 @@ export const usersApi = {
     password: string;
     full_name: string;
     role: string;
+    organization_id?: string | null;
     is_active: boolean;
   }) => api.post<SystemUser>("/users", data).then((r) => r.data),
   update: (
@@ -16,6 +17,7 @@ export const usersApi = {
     data: Partial<{
       full_name: string;
       role: string;
+      organization_id: string | null;
       is_active: boolean;
       password: string;
     }>,

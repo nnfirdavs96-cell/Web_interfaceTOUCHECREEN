@@ -20,6 +20,8 @@ def get_settings(_: User = Depends(get_current_user)) -> dict:
         "env": settings.ENV,
         "debug": settings.DEBUG,
         "hikvision_mode": settings.HIKVISION_MODE,
+        "multitenancy_enabled": settings.MULTITENANCY_ENABLED,
+        "mediamtx_enabled": settings.MEDIAMTX_ENABLED,
         "access_token_ttl_minutes": settings.ACCESS_TOKEN_EXPIRE_MINUTES,
         "refresh_token_ttl_days": settings.REFRESH_TOKEN_EXPIRE_DAYS,
         "cors_origins": settings.cors_origins_list,
