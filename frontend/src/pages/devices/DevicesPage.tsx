@@ -34,6 +34,8 @@ const PURPOSE_LABEL: Record<string, string> = {
 const VENDOR_LABEL: Record<string, string> = {
   hikvision: "Hikvision",
   zkteco: "ZKTeco",
+  dahua: "Dahua",
+  suprema: "Suprema",
 };
 
 interface Form {
@@ -325,17 +327,24 @@ export default function DevicesPage() {
               onChange={(e) => {
                 const vendor = e.target.value;
                 // Подставляем типовой порт вендора, если пользователь не менял его вручную.
-                const defaultPort = vendor === "zkteco" ? 4370 : 80;
+                const portByVendor: Record<string, number> = {
+                  zkteco: 4370,
+                  suprema: 443,
+                };
+                const defaultPort = portByVendor[vendor] ?? 80;
+                const knownPorts = [80, 4370, 443];
                 setForm({
                   ...form,
                   vendor,
-                  port: form.port === 80 || form.port === 4370 ? defaultPort : form.port,
+                  port: knownPorts.includes(form.port ?? 80) ? defaultPort : form.port,
                 });
               }}
               className="w-full rounded-inputs border border-ice-white/14 bg-carbon/60 px-3 py-2 text-body-sm text-ice-white outline-none hover:border-ice-white/30 focus:border-electric-cobalt"
             >
               <option value="hikvision">Hikvision (ISAPI)</option>
-              <option value="zkteco">ZKTeco (в разработке)</option>
+              <option value="zkteco">ZKTeco</option>
+              <option value="dahua">Dahua (CGI)</option>
+              <option value="suprema">Suprema (BioStar 2)</option>
             </select>
           </Field>
           <div className="grid grid-cols-2 gap-3">

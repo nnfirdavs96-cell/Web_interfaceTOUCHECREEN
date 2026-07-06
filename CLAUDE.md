@@ -30,7 +30,9 @@ backend/app/
 │   ├── base.py          # Protocol AccessDevice + dataclasses (alias HikvisionClient)
 │   ├── hikvision.py     # ГЛАВНЫЙ файл — IsapiClient, все ISAPI вызовы V4.48
 │   ├── mock.py          # MockClient для разработки
-│   ├── zkteco.py        # ZKTecoDriver — КАРКАС (в разработке, нет железа)
+│   ├── zkteco.py        # ZKTecoDriver (pyzk, порт 4370) — ждёт железа
+│   ├── dahua.py         # DahuaDriver (HTTP CGI) — magicBox/snapshot/time, ждёт железа
+│   ├── suprema.py       # SupremaDriver (BioStar 2 API) — каркас, нужен BioStar-сервер
 │   └── service.py       # DeviceService.driver_for(device) — диспетч по vendor
 ├── services/cameras/    # Camera Abstraction Layer (CAL) — ONVIF/RTSP видео
 │   ├── base.py          # Protocol VideoSource + CameraConn/Info + PTZCommand
@@ -119,7 +121,7 @@ weekPlan 24/7 + привязывает шаблон 1.
 - ✅ **F** мультитенантность (тенант=Organization) — авто-фильтрация всех SELECT через
   contextvar + with_loader_criteria (`app/api/tenant.py`), флаг `MULTITENANCY_ENABLED` (OFF по умолч.)
 - ⏳ **G** Edge Gateway (агент за NAT) — решение отложено
-- ⏳ **H** доп. вендоры (Dahua, Suprema) — по мере железа
+- ✅ **H** доп. вендоры: Dahua (CGI, рабочий каркас), Suprema (BioStar 2, каркас) — ждут железа
 
 Мультитенантность: `MULTITENANCY_ENABLED=true` включает изоляцию. Тенант = Organization.
 Не-админ видит только свою org (users.organization_id); super_admin/admin — все.
