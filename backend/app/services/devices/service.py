@@ -49,6 +49,13 @@ class DeviceService:
 
         vendor = (getattr(device, "vendor", None) or "hikvision").lower()
 
+        # Устройство за Edge Gateway → маршрутизируем через туннель к агенту.
+        gateway_id = getattr(device, "gateway_id", None)
+        if gateway_id is not None:
+            from app.services.gateway import RemoteDriver, registry
+
+            return RemoteDriver(registry, str(gateway_id), vendor, conn)
+
         if vendor == "zkteco":
             return ZKTecoDriver(conn)
         if vendor == "dahua":

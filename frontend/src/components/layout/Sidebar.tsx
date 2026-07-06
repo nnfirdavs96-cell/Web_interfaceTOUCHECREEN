@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   MapPin,
   Network,
+  Router,
   Settings,
   Shield,
   UserCog,
@@ -59,6 +60,7 @@ const SECTIONS: NavSection[] = [
     items: [
       { to: "/devices", labelKey: "nav.devices", icon: Cpu },
       { to: "/cameras", labelKey: "nav.cameras", icon: Video },
+      { to: "/gateways", labelKey: "nav.gateways", icon: Router },
       { to: "/employees", labelKey: "nav.employees", icon: Users },
       { to: "/schedules", labelKey: "nav.schedules", icon: Calendar },
     ],

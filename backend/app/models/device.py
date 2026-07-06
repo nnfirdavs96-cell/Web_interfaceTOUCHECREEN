@@ -13,6 +13,10 @@ class Device(UUIDPKMixin, TimestampMixin, TenantMixin, Base):
     branch_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    # Если задан — устройство в LAN и доступно только через Edge Gateway.
+    gateway_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("gateways.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     vendor: Mapped[str] = mapped_column(
         String(32), default="hikvision", nullable=False, index=True

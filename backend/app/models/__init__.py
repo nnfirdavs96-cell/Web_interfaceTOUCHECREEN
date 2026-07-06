@@ -4,6 +4,7 @@ from app.models.audit import AuditLog
 from app.models.branch import Branch
 from app.models.camera import Camera
 from app.models.department import Department
+from app.models.gateway import Gateway
 from app.models.device import Device
 from app.models.employee import Employee
 from app.models.organization import Organization
@@ -20,6 +21,7 @@ __all__ = [
     "Department",
     "Device",
     "Employee",
+    "Gateway",
     "EmployeeCredential",
     "EmployeeDeviceAccess",
     "Organization",

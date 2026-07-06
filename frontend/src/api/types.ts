@@ -61,6 +61,7 @@ export interface Device {
   id: string;
   branch_id: string | null;
   organization_id: string | null;
+  gateway_id: string | null;
   name: string;
   vendor: string;
   type: string;
@@ -83,6 +84,22 @@ export interface DeviceTestResult {
   detail: string;
   serial_number: string | null;
   firmware: string | null;
+}
+
+export interface Gateway {
+  id: string;
+  branch_id: string | null;
+  organization_id: string | null;
+  name: string;
+  online: boolean;
+  last_seen_at: string | null;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GatewayCreated extends Gateway {
+  token: string;
 }
 
 export interface Camera {

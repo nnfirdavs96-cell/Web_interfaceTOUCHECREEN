@@ -11,6 +11,7 @@ import UsersPage from "@/pages/users/UsersPage";
 import AuditPage from "@/pages/audit/AuditPage";
 import DevicesPage from "@/pages/devices/DevicesPage";
 import CamerasPage from "@/pages/cameras/CamerasPage";
+import GatewaysPage from "@/pages/gateways/GatewaysPage";
 import EmployeesPage from "@/pages/employees/EmployeesPage";
 import EmployeeDetailPage from "@/pages/employees/EmployeeDetailPage";
 import SchedulesPage from "@/pages/schedules/SchedulesPage";
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
           { path: "/branches", element: <BranchesPage /> },
           { path: "/devices", element: <DevicesPage /> },
           { path: "/cameras", element: <CamerasPage /> },
+          { path: "/gateways", element: <GatewaysPage /> },
           { path: "/employees", element: <EmployeesPage /> },
           { path: "/employees/:id", element: <EmployeeDetailPage /> },
           { path: "/schedules", element: <SchedulesPage /> },
