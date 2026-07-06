@@ -41,9 +41,19 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - backend
+      - mediamtx
     ports:
       - "8090:80"
     networks: [public]
+
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
+    # WebRTC(8889)/HLS(8888)/API(9997) — через nginx. UDP 8189 — WebRTC ICE.
+    ports:
+      - "8189:8189/udp"
+    networks: [internal, public]
 
 networks:
   internal:

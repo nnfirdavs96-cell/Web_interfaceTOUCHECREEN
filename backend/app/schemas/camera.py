@@ -53,5 +53,8 @@ class CameraTestResult(BaseModel):
 
 
 class CameraStreamInfo(BaseModel):
-    stream_url: str | None = None
+    stream_url: str | None = None       # исходный RTSP-URL
+    hls_url: str | None = None          # live HLS через MediaMTX (для браузера)
+    webrtc_url: str | None = None       # live WebRTC (WHEP) через MediaMTX
+    live: bool = False                  # доступен ли live через транскодер
     detail: str

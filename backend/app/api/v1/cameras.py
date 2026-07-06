@@ -111,15 +111,52 @@ async def get_stream(
     db: Session = Depends(get_db),
     _: User = Depends(require("cameras.read")),
 ):
-    """RTSP-URL камеры (для будущего WebRTC/HLS транскодера)."""
+    """Live-стрим камеры.
+
+    Если включён MediaMTX — регистрирует путь и отдаёт HLS/WebRTC URL для
+    воспроизведения в браузере. Иначе — только исходный RTSP-URL.
+    """
+    from app.core.config import settings
+    from app.core.crypto import decrypt
+    from app.services.cameras import mediamtx
+
     camera = crud.get_or_404(db, Camera, camera_id)
     driver = CameraService.driver_for(camera)
-    url = await driver.get_stream_url()
-    if url:
-        return CameraStreamInfo(stream_url=url, detail="RTSP-поток доступен")
+    rtsp = await driver.get_stream_url()
+
+    if not rtsp:
+        return CameraStreamInfo(
+            stream_url=None,
+            live=False,
+            detail="RTSP-URL не найден (ONVIF не ответил и rtsp_url не задан)",
+        )
+
+    if not settings.MEDIAMTX_ENABLED:
+        return CameraStreamInfo(
+            stream_url=rtsp,
+            live=False,
+            detail="RTSP доступен. Live в браузере требует MediaMTX (выключен).",
+        )
+
+    try:
+        password = decrypt(camera.password_encrypted)
+    except Exception:
+        password = ""
+    source = mediamtx.build_source(rtsp, camera.username, password)
+    ok = await mediamtx.ensure_path(camera.id, source)
+    urls = mediamtx.playback_urls(camera.id)
+    if ok:
+        return CameraStreamInfo(
+            stream_url=rtsp,
+            hls_url=urls["hls_url"],
+            webrtc_url=urls["webrtc_url"],
+            live=True,
+            detail="Live-поток готов (MediaMTX)",
+        )
     return CameraStreamInfo(
-        stream_url=None,
-        detail="RTSP-URL не найден (ONVIF не ответил и rtsp_url не задан)",
+        stream_url=rtsp,
+        live=False,
+        detail="MediaMTX недоступен — live не запущен, есть только RTSP",
     )
 
 
