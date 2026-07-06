@@ -5,6 +5,7 @@ from app.api.v1 import (
     audit,
     auth,
     branches,
+    cameras,
     dashboard,
     departments,
     devices,
@@ -23,6 +24,7 @@ api_router.include_router(organizations.router)
 api_router.include_router(departments.router)
 api_router.include_router(branches.router)
 api_router.include_router(devices.router)
+api_router.include_router(cameras.router)
 api_router.include_router(employees.router)
 api_router.include_router(schedules.router)
 api_router.include_router(attendance.router)

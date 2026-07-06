@@ -26,12 +26,17 @@ backend/app/
 │   ├── devices.py       # CRUD + test-connection + sync-time + snapshot
 │   ├── employees.py     # CRUD + auto-sync + credentials endpoints
 │   └── attendance.py / reports.py / ...
-├── services/devices/    # Device Abstraction Layer (DAL) — мультивендор
+├── services/devices/    # Device Abstraction Layer (DAL) — мультивендор СКУД
 │   ├── base.py          # Protocol AccessDevice + dataclasses (alias HikvisionClient)
 │   ├── hikvision.py     # ГЛАВНЫЙ файл — IsapiClient, все ISAPI вызовы V4.48
 │   ├── mock.py          # MockClient для разработки
 │   ├── zkteco.py        # ZKTecoDriver — КАРКАС (в разработке, нет железа)
 │   └── service.py       # DeviceService.driver_for(device) — диспетч по vendor
+├── services/cameras/    # Camera Abstraction Layer (CAL) — ONVIF/RTSP видео
+│   ├── base.py          # Protocol VideoSource + CameraConn/Info + PTZCommand
+│   ├── onvif.py         # OnvifCamera — ONVIF discovery + snapshot (нет железа, каркас)
+│   ├── mock.py          # MockCamera — синтетический PNG-кадр для dev
+│   └── service.py       # CameraService.driver_for(camera) — диспетч по vendor
 ├── services/poller.py   # asyncio фоновый poller (30s событий + 1h tz-sync)
 └── main.py              # FastAPI factory + startup + ALTER TABLE миграции
 frontend/src/
@@ -102,12 +107,27 @@ weekPlan 24/7 + привязывает шаблон 1.
 - ✅ Sync времени работает (XML PUT, простой формат без xmlns)
 - ✅ События проходят, poller их ловит, табель рассчитывается
 
+## Мультивендорная платформа (ТЗ UniAccess) — прогресс
+
+Цель: единая платформа СКУД+видео для Hikvision/ZKTeco/Dahua + ONVIF-камеры.
+- ✅ **A+B** Device Abstraction Layer (`services/devices/`) — Hikvision работает, ZKTeco каркас
+- ✅ **D** Camera Abstraction Layer (`services/cameras/`) — ONVIF/RTSP + MockCamera, live-превью в UI (страница «Камеры»)
+- ⏳ **C** ZKTeco драйвер — ждёт железа (pyzk порт 4370 / ZKBio PUSH SDK)
+- ⏳ **E** tenant-ready миграция (мультитенантность) — решение отложено
+- ⏳ **G** Edge Gateway (агент за NAT) — решение отложено
+- ⏳ **H** доп. вендоры (Dahua, Suprema) — по мере железа
+
+Камеры: RTSP в браузере напрямую не играет — сейчас polling snapshot (2.5с).
+Полноценный low-latency стрим = транскодер RTSP→WebRTC/HLS (MediaMTX), отдельный этап.
+`get_stream_url()` уже готов отдавать rtsp_url для него.
+
 ## Что осталось доделать (приоритет M+)
 
 1. **Этап 6** — интеграции с 1С / биллингом
 2. Production HTTPS (Let's Encrypt + Nginx)
 3. Alembic миграции вместо `ALTER TABLE IF NOT EXISTS`
 4. Bulk-импорт сотрудников из Excel
+5. MediaMTX-транскодер для low-latency видео (сейчас polling snapshot)
 
 ## Workflow деплоя
 

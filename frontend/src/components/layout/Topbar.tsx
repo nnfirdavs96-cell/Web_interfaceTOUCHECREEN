@@ -10,6 +10,7 @@ import { useAuthStore } from "@/stores/auth";
 function routeFor(q: string): string {
   const s = q.trim().toLowerCase();
   if (!s) return "/employees";
+  if (/камер|camera|видео|onvif|rtsp/i.test(s)) return "/cameras";
   if (/устройств|device|терминал|hikvision|ip|серийн/i.test(s)) return "/devices";
   if (/отчёт|отчет|report|табел/i.test(s)) return "/reports";
   if (/расписан|schedule|график/i.test(s)) return "/schedules";

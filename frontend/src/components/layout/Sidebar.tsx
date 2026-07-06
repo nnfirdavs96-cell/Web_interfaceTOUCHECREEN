@@ -16,6 +16,7 @@ import {
   Shield,
   UserCog,
   Users,
+  Video,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -57,6 +58,7 @@ const SECTIONS: NavSection[] = [
     heading: "/ доступ",
     items: [
       { to: "/devices", labelKey: "nav.devices", icon: Cpu },
+      { to: "/cameras", labelKey: "nav.cameras", icon: Video },
       { to: "/employees", labelKey: "nav.employees", icon: Users },
       { to: "/schedules", labelKey: "nav.schedules", icon: Calendar },
     ],
