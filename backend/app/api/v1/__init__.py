@@ -9,6 +9,7 @@ from app.api.v1 import (
     dashboard,
     departments,
     devices,
+    gateways,
     employees,
     organizations,
     reports,
@@ -25,6 +26,7 @@ api_router.include_router(departments.router)
 api_router.include_router(branches.router)
 api_router.include_router(devices.router)
 api_router.include_router(cameras.router)
+api_router.include_router(gateways.router)
 api_router.include_router(employees.router)
 api_router.include_router(schedules.router)
 api_router.include_router(attendance.router)

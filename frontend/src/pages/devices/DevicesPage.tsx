@@ -13,6 +13,7 @@ import {
 import { useMemo, useState } from "react";
 import { branchesApi } from "@/api/branches";
 import { devicesApi } from "@/api/devices";
+import { gatewaysApi } from "@/api/gateways";
 import type { Device } from "@/api/types";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -40,6 +41,7 @@ const VENDOR_LABEL: Record<string, string> = {
 
 interface Form {
   branch_id?: string | null;
+  gateway_id?: string | null;
   name?: string;
   vendor?: string;
   type?: string;
@@ -76,6 +78,10 @@ export default function DevicesPage() {
   const branches = useQuery({
     queryKey: ["branches", "all"],
     queryFn: () => branchesApi.list({ page_size: 200 }),
+  });
+  const gateways = useQuery({
+    queryKey: ["gateways", "all"],
+    queryFn: () => gatewaysApi.list({ page_size: 200 }),
   });
   const branchMap = useMemo(
     () => new Map((branches.data?.items ?? []).map((b) => [b.id, b.name])),
@@ -145,6 +151,7 @@ export default function DevicesPage() {
     setEditing(d);
     setForm({
       branch_id: d.branch_id,
+      gateway_id: d.gateway_id,
       name: d.name,
       vendor: d.vendor ?? "hikvision",
       type: d.type,
@@ -399,6 +406,18 @@ export default function DevicesPage() {
               <option value="">— не привязано —</option>
               {branches.data?.items.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Edge Gateway (если устройство в LAN за NAT)">
+            <select
+              value={form.gateway_id ?? ""}
+              onChange={(e) => setForm({ ...form, gateway_id: e.target.value || null })}
+              className="w-full rounded-inputs border border-ice-white/14 bg-carbon/60 px-3 py-2 text-body-sm text-ice-white outline-none hover:border-ice-white/30 focus:border-electric-cobalt"
+            >
+              <option value="">— прямое подключение —</option>
+              {gateways.data?.items.map((g) => (
+                <option key={g.id} value={g.id}>{g.name}</option>
               ))}
             </select>
           </Field>

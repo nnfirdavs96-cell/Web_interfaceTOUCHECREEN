@@ -57,6 +57,13 @@ def create_app() -> FastAPI:
                     "vendor VARCHAR(32) NOT NULL DEFAULT 'hikvision'"
                 )
             )
+            # Edge Gateway: устройство может быть доступно только через шлюз.
+            conn.execute(
+                text(
+                    "ALTER TABLE devices ADD COLUMN IF NOT EXISTS "
+                    "gateway_id UUID REFERENCES gateways(id) ON DELETE SET NULL"
+                )
+            )
             # Tenant-ready: organization_id как граница тенанта (nullable, без enforcement).
             for _tbl in ("devices", "cameras", "users", "schedules"):
                 conn.execute(

@@ -40,8 +40,14 @@ backend/app/
 │   ├── mock.py          # MockCamera — синтетический PNG-кадр для dev
 │   ├── mediamtx.py      # Регистрация RTSP-пути в MediaMTX → HLS/WebRTC URL
 │   └── service.py       # CameraService.driver_for(camera) — диспетч по vendor
+├── services/gateway/    # Edge Gateway — доступ к устройствам за NAT
+│   ├── protocol.py      # сериализация RPC (bytes/datetime/dataclass ↔ JSON)
+│   ├── executor.py      # агент-сторона: поднимает драйвер и выполняет метод
+│   ├── registry.py      # облако: реестр подключённых агентов + RPC call/resolve
+│   └── remote.py        # RemoteDriver(AccessDevice) — вызовы через туннель
 ├── services/poller.py   # asyncio фоновый poller (30s событий + 1h tz-sync)
 └── main.py              # FastAPI factory + startup + ALTER TABLE миграции
+edge/agent.py            # автономный Edge Gateway агент (ставится в LAN клиента)
 frontend/src/
 ├── pages/employees/EmployeeDetailPage.tsx   # 5 вкладок (Профиль/Устройства/Регистрация/История/Табель)
 ├── pages/devices/DevicesPage.tsx            # Сетка карточек устройств + tz dropdown
@@ -120,8 +126,16 @@ weekPlan 24/7 + привязывает шаблон 1.
 - ✅ **E** tenant-ready миграция — organization_id (TenantMixin) в Device/Camera/User/Schedule, БЕЗ enforcement
 - ✅ **F** мультитенантность (тенант=Organization) — авто-фильтрация всех SELECT через
   contextvar + with_loader_criteria (`app/api/tenant.py`), флаг `MULTITENANCY_ENABLED` (OFF по умолч.)
-- ⏳ **G** Edge Gateway (агент за NAT) — решение отложено
+- ✅ **G** Edge Gateway — RemoteDriver маршрутизирует вызовы через WS-туннель к агенту
+  в LAN клиента (`services/gateway/` + `edge/agent.py`). Device.gateway_id → через шлюз.
+  RPC-путь проверен end-to-end в процессе (6 тестов, bytes/datetime/dataclass round-trip)
 - ✅ **H** доп. вендоры: Dahua (CGI, рабочий каркас), Suprema (BioStar 2, каркас) — ждут железа
+
+Edge Gateway: устройство с `gateway_id` доступно только через агента в LAN.
+`DeviceService.driver_for` → RemoteDriver (RPC по WS `/gateways/ws`, токен sha256).
+Агент: `python -m edge.agent` (CLOUD_WS_URL + GATEWAY_TOKEN). Если шлюз офлайн —
+методы деградируют мягко. e2e с реальным агентом/железом не гонялся, но RPC-протокол
+проверен в процессе. Multi-worker → нужен Redis pub/sub (registry сейчас in-memory).
 
 Мультитенантность: `MULTITENANCY_ENABLED=true` включает изоляцию. Тенант = Organization.
 Не-админ видит только свою org (users.organization_id); super_admin/admin — все.

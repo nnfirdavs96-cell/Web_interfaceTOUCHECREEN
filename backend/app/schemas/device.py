@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 class DeviceBase(BaseModel):
     branch_id: UUID | None = None
     organization_id: UUID | None = None
+    gateway_id: UUID | None = None
     name: str = Field(min_length=1, max_length=255)
     vendor: str = Field(default="hikvision")
     type: str = Field(default="multi")
@@ -25,6 +26,7 @@ class DeviceCreate(DeviceBase):
 class DeviceUpdate(BaseModel):
     branch_id: UUID | None = None
     organization_id: UUID | None = None
+    gateway_id: UUID | None = None
     name: str | None = None
     vendor: str | None = None
     type: str | None = None
