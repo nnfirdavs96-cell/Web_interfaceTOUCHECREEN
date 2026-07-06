@@ -10,7 +10,7 @@ from app.services.devices.base import (
 from app.services.devices.service import DeviceService, HikvisionService
 
 # Список поддерживаемых вендоров (для валидации/UI).
-SUPPORTED_VENDORS = ["hikvision", "zkteco"]
+SUPPORTED_VENDORS = ["hikvision", "zkteco", "dahua", "suprema"]
 
 __all__ = [
     "AccessDevice",

@@ -13,8 +13,10 @@ from app.core.config import settings
 from app.core.crypto import decrypt
 from app.models import Device
 from app.services.devices.base import AccessDevice, DeviceConn
+from app.services.devices.dahua import DahuaDriver
 from app.services.devices.hikvision import IsapiClient
 from app.services.devices.mock import MockClient
+from app.services.devices.suprema import SupremaDriver
 from app.services.devices.zkteco import ZKTecoDriver
 
 
@@ -49,6 +51,10 @@ class DeviceService:
 
         if vendor == "zkteco":
             return ZKTecoDriver(conn)
+        if vendor == "dahua":
+            return DahuaDriver(conn)
+        if vendor == "suprema":
+            return SupremaDriver(conn)
 
         # vendor == "hikvision" (и любой неизвестный — fallback на Hikvision)
         if settings.HIKVISION_MODE == "isapi":
