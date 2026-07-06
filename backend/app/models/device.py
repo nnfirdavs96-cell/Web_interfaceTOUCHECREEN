@@ -4,10 +4,10 @@ from uuid import UUID
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base, TimestampMixin, UUIDPKMixin
+from app.db.base import Base, TenantMixin, TimestampMixin, UUIDPKMixin
 
 
-class Device(UUIDPKMixin, TimestampMixin, Base):
+class Device(UUIDPKMixin, TimestampMixin, TenantMixin, Base):
     __tablename__ = "devices"
 
     branch_id: Mapped[UUID | None] = mapped_column(

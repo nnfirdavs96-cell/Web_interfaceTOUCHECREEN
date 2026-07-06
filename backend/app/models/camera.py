@@ -4,10 +4,10 @@ from uuid import UUID
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base, TimestampMixin, UUIDPKMixin
+from app.db.base import Base, TenantMixin, TimestampMixin, UUIDPKMixin
 
 
-class Camera(UUIDPKMixin, TimestampMixin, Base):
+class Camera(UUIDPKMixin, TimestampMixin, TenantMixin, Base):
     """IP-камера видеонаблюдения (подключение через ONVIF / RTSP).
 
     Отдельная сущность от Device (СКУД-терминал). Опционально

@@ -56,6 +56,21 @@ def create_app() -> FastAPI:
                     "vendor VARCHAR(32) NOT NULL DEFAULT 'hikvision'"
                 )
             )
+            # Tenant-ready: organization_id как граница тенанта (nullable, без enforcement).
+            for _tbl in ("devices", "cameras", "users", "schedules"):
+                conn.execute(
+                    text(
+                        f"ALTER TABLE {_tbl} ADD COLUMN IF NOT EXISTS "
+                        "organization_id UUID REFERENCES organizations(id) "
+                        "ON DELETE SET NULL"
+                    )
+                )
+                conn.execute(
+                    text(
+                        f"CREATE INDEX IF NOT EXISTS ix_{_tbl}_organization_id "
+                        f"ON {_tbl} (organization_id)"
+                    )
+                )
 
         from app.db.seed import run as seed_run
 

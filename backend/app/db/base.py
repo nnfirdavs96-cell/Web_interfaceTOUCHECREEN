@@ -1,12 +1,27 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, func
+from sqlalchemy import DateTime, ForeignKey, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
     pass
+
+
+class TenantMixin:
+    """Tenant-ready: организация = граница тенанта (мультитенантность).
+
+    Пока nullable и БЕЗ enforcement — только подготовка схемы, чтобы при
+    включении мультитенантности (отдельный этап) не мигрировать заполненную
+    прод-БД. Фильтрация по tenant добавляется middleware'ом позже.
+    """
+
+    organization_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("organizations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
 
 class TimestampMixin:

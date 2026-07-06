@@ -59,6 +59,7 @@ export interface RoleInfo {
 export interface Device {
   id: string;
   branch_id: string | null;
+  organization_id: string | null;
   name: string;
   vendor: string;
   type: string;
@@ -86,6 +87,7 @@ export interface DeviceTestResult {
 export interface Camera {
   id: string;
   branch_id: string | null;
+  organization_id: string | null;
   linked_device_id: string | null;
   name: string;
   vendor: string;

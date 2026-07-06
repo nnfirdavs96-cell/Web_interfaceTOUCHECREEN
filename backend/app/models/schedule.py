@@ -4,10 +4,10 @@ from uuid import UUID
 from sqlalchemy import Boolean, Date, ForeignKey, Integer, String, Text, Time
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base, TimestampMixin, UUIDPKMixin
+from app.db.base import Base, TenantMixin, TimestampMixin, UUIDPKMixin
 
 
-class Schedule(UUIDPKMixin, TimestampMixin, Base):
+class Schedule(UUIDPKMixin, TimestampMixin, TenantMixin, Base):
     __tablename__ = "schedules"
 
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
